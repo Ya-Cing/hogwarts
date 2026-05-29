@@ -3,516 +3,1120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>霍格華茲魔法學院人生模擬器 - 動態重構版</title>
+    <title>霍格華茲魔法學院人生模擬器 | 全功能網頁化終極主宰 Ver.3.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <style>
         :root {
-            --bg-main: #09090d;
-            --panel-bg: #11111a;
-            --panel-brd: #1d1d2b;
+            --bg-deep: #05060a;
+            --bg-panel: #0f111a;
+            --bg-card: #151924;
             --accent-gold: #d4af37;
-            --accent-purple: #9b5de5;
-            --accent-blue: #00bfff;
-            --accent-green: #2ed573;
-            --accent-red: #ff4757;
-            --text-main: #e2e8f0;
-            --text-muted: #747d8c;
+            --accent-gold-hover: #f3e5ab;
+            --accent-magic: #9b5de5;
+            --text-main: #cbd5e1;
+            --text-bright: #ffffff;
+            --text-muted: #64748b;
+            --threat-red: #ef4444;
+            --border-color: #1e2433;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        body, input, select, textarea, button {
+            font-family: 'Times New Roman', 'PingFang TC', 'Microsoft JhengHei', -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 電影級魔法開場動畫過場層 */
+        .opening-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #130f26 0%, #000000 100%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease, visibility 1.5s ease;
+        }
+        .opening-frame {
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 50px 70px;
+            background: rgba(15, 17, 26, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: inset 0 0 40px rgba(155, 93, 229, 0.1), 0 30px 60px rgba(0,0,0,0.9);
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.95);
+            animation: cinematicReveal 3.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .opening-crest {
+            font-size: 3.5rem;
+            margin-bottom: 18px;
+            color: var(--accent-gold);
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+            animation: crestGlow 2s ease-in-out infinite alternate;
+        }
+        .opening-text {
+            color: var(--accent-gold);
+            font-size: 2.2rem;
+            letter-spacing: 8px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+        .opening-sub {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        @keyframes cinematicReveal {
+            0% { opacity: 0; transform: scale(0.95); filter: blur(6px); }
+            20% { opacity: 1; transform: scale(1); filter: blur(0); }
+            80% { opacity: 1; transform: scale(1.02); filter: blur(0); }
+            100% { opacity: 0; transform: scale(1.06); filter: blur(4px); }
+        }
+        @keyframes crestGlow {
+            0% { transform: translateY(0); text-shadow: 0 0 15px rgba(155, 93, 229, 0.3); }
+            100% { transform: translateY(-5px); text-shadow: 0 0 35px rgba(212, 175, 55, 0.7); }
+        }
+
+        /* 頂部控制欄 */
         header {
-            background-color: var(--panel-bg);
-            border-bottom: 1px solid var(--panel-brd);
-            padding: 10px 20px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 100;
+            height: 60px;
+            z-index: 10;
         }
-        .logo-area { font-weight: bold; color: var(--accent-gold); letter-spacing: 1px; font-size: 1.1rem; }
-        .sys-ops { display: flex; gap: 8px; }
-        .btn-sys { background: transparent; border: 1px solid var(--text-muted); color: var(--text-main); padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
-        .btn-sys:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
 
-        #main-layout { flex-grow: 1; display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 50px); overflow: hidden; }
-        @media (max-width: 768px) { #main-layout { grid-template-columns: 1fr; grid-template-rows: 180px 1fr; } }
+        header h1 {
+            color: var(--accent-gold);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
 
-        #sidebar { background-color: var(--panel-bg); border-right: 1px solid var(--panel-brd); display: flex; flex-direction: column; overflow: hidden; }
-        .tab-headers { display: flex; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--panel-brd); }
-        .tab-btn { flex: 1; padding: 10px 5px; background: transparent; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-align: center; font-weight: bold; }
-        .tab-btn.active { color: var(--accent-gold); border-bottom: 2px solid var(--accent-gold); background: rgba(255,255,255,0.02); }
-        .tab-content-wrapper { flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6; }
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
 
-        #content-window { display: flex; flex-direction: column; height: 100%; background: radial-gradient(circle at top, #131320 0%, #09090d 100%); overflow: hidden; }
-        #log-stream { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .header-actions button {
+            background: transparent;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .header-actions button:hover {
+            background: var(--accent-gold);
+            color: var(--bg-deep);
+        }
+
+        /* 行動端頁籤控制列 */
+        .mobile-tabs {
+            display: none;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            height: 50px;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 9;
+        }
+
+        .tab-item {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .tab-item.active {
+            color: var(--accent-gold);
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        /* 遊戲核心雙欄架構 */
+        .game-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 430px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 22px;
+            gap: 24px;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-deep);
+            overflow: hidden;
+        }
+
+        .story-stream {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
         
-        .log-row { display: flex; flex-direction: column; animation: fadeIn 0.3s ease forwards; }
-        .log-sender { font-size: 0.75rem; color: var(--accent-gold); margin-bottom: 3px; font-weight: bold; }
-        .log-bubble { background: rgba(255,255,255,0.02); border: 1px solid var(--panel-brd); padding: 12px 16px; border-radius: 4px; line-height: 1.7; max-width: 85%; font-size: 0.95rem; }
-        
-        .log-row.system .log-bubble { border-left: 3px solid var(--accent-blue); background: rgba(0, 191, 255, 0.01); color: #bde0fe; font-size: 0.85rem; }
-        .log-row.npc .log-bubble { border-left: 3px solid var(--accent-purple); background: rgba(155, 93, 229, 0.01); font-style: italic; }
-        .log-row.player .log-bubble { border-left: 3px solid var(--accent-gold); background: rgba(214, 175, 55, 0.01); align-self: flex-start; }
+        .story-stream::-webkit-scrollbar { width: 4px; }
+        .story-stream::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
 
-        #interactive-panel { padding: 20px; background: rgba(15, 15, 24, 0.95); border-top: 1px solid var(--panel-brd); display: flex; flex-direction: column; gap: 12px; }
-        .options-group { display: flex; flex-direction: column; gap: 8px; }
-        
-        /* 動態按鈕樣式矩陣 */
-        .btn-option { background: rgba(255,255,255,0.02); border: 1px solid var(--panel-brd); color: var(--text-main); padding: 12px 15px; text-align: left; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
-        .btn-option:hover:not(:disabled) { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.04); transform: translateX(3px); }
-        .btn-option:disabled { opacity: 0.3; cursor: not-allowed; background: rgba(0,0,0,0.4); border-color: #2c2c3e; color: var(--text-muted); }
-        
-        /* 數值恢復專用綠色高亮按鈕 */
-        .btn-option.recovery-mode { border-left: 4px solid var(--accent-green); background: rgba(46, 213, 115, 0.02); }
-        .btn-option.recovery-mode:hover:not(:disabled) { border-color: var(--accent-green); background: rgba(46, 213, 115, 0.06); }
-        
-        /* 隱藏特權解鎖按鈕 */
-        .btn-option.trait-unlocked { border-left: 4px solid var(--accent-blue); background: rgba(0, 191, 255, 0.03); }
+        .control-panel {
+            background-color: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-        .indicator-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
-        .badge-rec { background: rgba(46, 213, 115, 0.2); color: var(--accent-green); }
-        .badge-danger { background: rgba(255, 71, 87, 0.2); color: var(--accent-red); }
-        .badge-lock { background: rgba(116, 125, 140, 0.2); color: var(--text-muted); }
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 4px 0;
+            user-select: none;
+        }
+        .collapsible-header:hover .section-title { color: var(--accent-gold-hover); }
+        .toggle-icon { font-size: 0.8rem; color: var(--text-muted); transition: transform 0.3s; }
+        .collapsible-content { transition: all 0.3s ease-in-out; overflow: hidden; }
+        .folded { display: none !important; }
 
-        .input-bar { display: flex; gap: 8px; }
-        .txt-custom { flex-grow: 1; background: #000; border: 1px solid var(--panel-brd); color: #fff; padding: 10px; border-radius: 4px; font-size: 0.9rem; }
-        .btn-exec { background: var(--accent-purple); color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .section-title {
+            color: var(--accent-gold);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-left: 3px solid var(--accent-gold);
+            padding-left: 8px;
+            font-weight: 600;
+        }
 
-        #toast-container { position: fixed; top: 60px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
-        .toast { background: #1a1a26; border-left: 4px solid var(--accent-gold); color: #fff; padding: 12px 20px; border-radius: 4px; font-size: 0.85rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s ease, fadeOut 0.3s ease forwards 3.5s; }
-        .toast.success { border-left-color: var(--accent-green); }
-        .toast.danger { border-left-color: var(--accent-red); }
+        /* 數據看板 Markdown 樣式優化 */
+        .profile-box, .forum-box { font-size: 0.85rem; line-height: 1.6; }
+        .profile-box h2, .profile-box h3, .forum-box h2, .forum-box h3 {
+            color: var(--accent-gold);
+            font-size: 0.9rem;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            padding-bottom: 4px;
+        }
+        .profile-box table, .forum-box table {
+            width: 100%; border-collapse: collapse; margin: 10px 0; background-color: rgba(255, 255, 255, 0.01);
+        }
+        .profile-box th, .profile-box td, .forum-box th, .forum-box td {
+            border: 1px solid var(--border-color); padding: 8px; text-align: left;
+        }
+        .profile-box th, .forum-box th {
+            background-color: rgba(212, 175, 55, 0.06); color: var(--accent-gold); font-weight: 600;
+        }
+        .profile-box ul, .forum-box ul { padding-left: 16px; margin: 8px 0; }
+        .profile-box li, .forum-box li { margin-bottom: 4px; }
+        .profile-box blockquote, .forum-box blockquote {
+            border-left: 3px solid var(--accent-magic); background: rgba(155, 93, 229, 0.03); padding: 10px; margin: 10px 0; font-style: italic;
+        }
+        .forum-section-container {
+            background: rgba(155, 93, 229, 0.01); border: 1px dashed rgba(155, 93, 229, 0.15); padding: 14px; border-radius: 6px;
+        }
 
-        .hud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .hud-item { background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); }
-        .hud-label { font-size: 0.75rem; color: var(--text-muted); display: block; }
-        .hud-val { font-size: 0.9rem; font-weight: bold; color: var(--text-main); }
+        /* 沉浸式對白框設計 */
+        .story-block {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            font-size: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+        .story-block p { line-height: 1.6 !important; margin-bottom: 12px; }
+        .story-block strong { color: var(--accent-gold); }
+
+        /* 結構化動態按鈕間距 */
+        .options-container { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 8px; }
+
+        .option-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 14px 20px;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: all 0.25s ease;
+            line-height: 1.4;
+        }
+        .option-btn:hover {
+            border-color: var(--accent-gold);
+            background-color: rgba(212, 175, 55, 0.04);
+            color: var(--text-bright);
+            transform: translateX(4px);
+        }
+        .option-btn strong { color: var(--accent-gold); margin-right: 6px; }
+
+        /* 去結構化自由決策控制台 */
+        .custom-input-wrapper, .decryption-input-wrapper { display: flex; gap: 10px; width: 100%; }
+        .custom-input-wrapper input, .decryption-input-wrapper input {
+            background-color: var(--bg-deep); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; font-size: 0.9rem;
+        }
+        .custom-input-wrapper input { flex: 1; color: #fff; border-style: dashed; }
+        .custom-input-wrapper input:focus, .decryption-input-wrapper input:focus { outline: none; border-color: var(--accent-gold); }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
-        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+        .custom-input-wrapper button, .decryption-input-wrapper button {
+            background-color: var(--accent-gold); color: var(--bg-deep); border: none; padding: 0 24px; border-radius: 6px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: background 0.2s;
+        }
+        .custom-input-wrapper button:hover { background-color: var(--accent-gold-hover); }
+
+        .decryption-input-wrapper input {
+            border: 1px solid rgba(155, 93, 229, 0.2); text-align: center; font-family: monospace; font-weight: bold; color: var(--accent-magic) !important;
+        }
+        #decrypt-id-input { flex: 0 0 130px; }
+        #decrypt-guess-input { flex: 1; }
+
+        /* 權力審查大門覆蓋層 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--bg-panel); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 30px; width: 95%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative;
+        }
+        .modal-content h2 { color: var(--accent-gold); margin-bottom: 16px; font-size: 1.3rem; text-align: center; letter-spacing: 1px; }
+        .modal-close-btn {
+            position: absolute; top: 15px; right: 20px; background: transparent; border: none; color: var(--text-bright); font-size: 1.75rem; cursor: pointer; opacity: 0.35; transition: all 0.3s ease; line-height: 1;
+        }
+        .modal-close-btn:hover { opacity: 1; color: #FFD700; }
+        
+        .shrunk-dashed-title {
+            font-size: 0.85rem !important; border-bottom: 1px dashed var(--accent-gold); padding-bottom: 4px; display: inline-block; color: var(--accent-gold); font-weight: 700; letter-spacing: 1px; margin: 18px 0 12px 0;
+        }
+        .modal-subsection-title {
+            color: var(--accent-gold); font-size: 0.9rem; margin: 18px 0 12px 0; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color); font-weight: 700;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; background-color: var(--bg-deep); border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; color: var(--text-main); font-size: 0.95rem; transition: border-color 0.25s;
+        }
+        .form-group select option { background-color: var(--bg-deep); color: var(--text-main); }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent-gold); }
+        .form-group textarea { height: 70px; resize: none; }
+        
+        .modal-btn {
+            width: 100%; background-color: var(--accent-gold); color: var(--bg-deep); border: none; padding: 14px; border-radius: 4px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; letter-spacing: 1px; transition: background 0.2s;
+        }
+        .modal-btn:hover { background-color: var(--accent-gold-hover); }
+
+        .decrypt-modal-content { border: 1px solid var(--accent-magic) !important; text-align: center; }
+        .decrypt-status-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+        .hidden { display: none !important; }
+        .loading-spinner { display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--accent-gold); font-style: italic; padding: 5px; font-size: 0.85rem; }
+
+        @media (max-width: 768px) {
+            .mobile-tabs { display: flex; }
+            header { height: 50px; padding: 10px 16px; }
+            header h1 { font-size: 1rem; }
+            .header-actions button { padding: 4px 8px; font-size: 0.75rem; }
+            .game-container { flex-direction: column; height: calc(100vh - 110px); }
+            .sidebar { width: 100%; height: 100%; padding: 14px; display: none; }
+            .main-content { width: 100%; height: 100%; display: flex; }
+            .story-stream { padding: 14px; }
+            .control-panel { padding: 12px; max-height: 55%; overflow-y: auto; }
+            .custom-input-wrapper, .decryption-input-wrapper { flex-direction: column; gap: 6px; }
+            .custom-input-wrapper input, .decryption-input-wrapper input { width: 100% !important; }
+            .custom-input-wrapper button, .decryption-input-wrapper button { width: 100% !important; height: 40px; }
+            .option-btn { padding: 12px 16px; font-size: 0.9rem; gap: 14px; }
+
+            body.show-profile .sidebar { display: block; }
+            body.show-profile #forum-section { display: none; }
+            body.show-profile .main-content { display: none; }
+            body.show-forum .sidebar { display: block; }
+            body.show-forum #profile-container { display: none; }
+            body.show-forum .sidebar > div:first-child { display: none; } 
+            body.show-forum .main-content { display: none; }
+            body.show-story .sidebar { display: none; }
+            body.show-story .main-content { display: flex; }
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo-area">🔮 HOGWARTS ENGINE CORE V3.0</div>
-        <div id="timeline-indicator" style="font-size:0.85rem; color:var(--accent-gold);">時鐘脈衝同步中...</div>
-        <div class="sys-ops">
-            <button class="btn-sys" onclick="saveSnapshot()">⚡ 覆寫快照</button>
-            <button class="btn-sys" onclick="loadSnapshot()">📜 讀取存檔</button>
-        </div>
-    </header>
-
-    <div id="main-layout">
-        <div id="sidebar">
-            <div class="tab-headers">
-                <button class="tab-btn active" onclick="switchTab('tab-status')">巫師特質</button>
-                <button class="tab-btn" onclick="switchTab('tab-npc')">人際網絡</button>
-                <button class="tab-btn" onclick="switchTab('tab-spells')">魔法書庫</button>
-                <button class="tab-btn" onclick="switchTab('tab-bag')">行李背包</button>
-            </div>
-            
-            <div class="tab-content-wrapper">
-                <div id="tab-status" class="tab-pane active">
-                    <div class="hud-grid">
-                        <div class="hud-item"><span class="hud-label">中文姓名</span><span class="hud-val" id="hud-name">林恩·沃克</span></div>
-                        <div class="hud-item"><span class="hud-label">學院院風</span><span class="hud-val" id="hud-house" style="color:var(--accent-gold);">未定</span></div>
-                        <div class="hud-item"><span class="hud-label">生理健康</span><span class="hud-val" id="hud-health">100/100</span></div>
-                        <div class="hud-item"><span class="hud-label">精神心情</span><span class="hud-val" id="hud-mood">100/100</span></div>
-                        <div class="hud-item"><span class="hud-label">視覺魅力</span><span class="hud-val" id="hud-charisma">50</span></div>
-                        <div class="hud-item"><span class="hud-label">語言談吐</span><span class="hud-val" id="hud-speech">50</span></div>
-                    </div>
-                    <p style="color:var(--text-muted); font-size:0.75rem;">生理狀態標籤：<span id="hud-tags" style="color:#fff; background:var(--accent-purple); padding:1px 4px; border-radius:2px;">正常</span></p>
-                </div>
-                <div id="tab-npc" class="tab-pane">
-                    <div id="npc-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-                </div>
-                <div id="tab-spells" class="tab-pane">
-                    <div class="hud-grid">
-                        <div class="hud-item"><span class="hud-label">變形學熟練度</span><span class="hud-val" id="spell-trans">10%</span></div>
-                        <div class="hud-item"><span class="hud-label">魔藥學熟練度</span><span class="hud-val" id="spell-potions">10%</span></div>
-                        <div class="hud-item"><span class="hud-label">黑魔法防禦術</span><span class="hud-val" id="spell-dada">10%</span></div>
-                        <div class="hud-item"><span class="hud-label">黑魔法傾向</span><span class="hud-val" id="spell-dark" style="color:var(--accent-red);">0%</span></div>
-                    </div>
-                </div>
-                <div id="tab-bag" class="tab-pane">
-                    <div class="hud-item" style="margin-bottom:10px;"><span class="hud-label">古靈閣常駐資產</span><span class="hud-val" id="hud-galleon" style="color:var(--accent-gold);">0 G</span></div>
-                    <p class="hud-label">持有裝備物件：</p>
-                    <ul id="inventory-list" style="padding-left:15px; margin-top:5px; color:var(--text-muted);"></ul>
-                </div>
-            </div>
-        </div>
-
-        <div id="content-window">
-            <div id="log-stream"></div>
-            
-            <div id="interactive-panel">
-                <div class="options-group" id="options-wrapper"></div>
-                <div class="input-bar">
-                    <input type="text" id="custom-nlp-input" class="txt-custom" placeholder="不使用按鈕？在此鍵入自訂決策言行，NLP 內核將實時演繹...">
-                    <button class="btn-exec" onclick="submitCustomNLP()">執行</button>
-                </div>
-            </div>
+    <div id="opening-canvas" class="opening-layer">
+        <div class="opening-frame">
+            <div class="opening-crest">✨</div>
+            <div class="opening-text">霍格華茲學院</div>
+            <div class="opening-sub">人生模擬器 ｜ 數據網格終極控制端 V3.0</div>
         </div>
     </div>
 
-    <div id="toast-container"></div>
+    <header>
+        <h1>⚡ HOGWARTS ENGINE <span style="font-size: 0.75rem; color: var(--text-muted);">Core V3.0</span></h1>
+        <div class="header-actions">
+            <button onclick="toggleApiKeyModal()">⚙️ 存檔/API金鑰</button>
+            <button onclick="restartGame()" style="border-color: var(--threat-red); color: var(--threat-red);">🔄 重置名冊</button>
+        </div>
+    </header>
+
+    <div class="mobile-tabs">
+        <div class="tab-item active" id="tab-story" onclick="switchMobileTab('story')">📖 羊皮紙卷</div>
+        <div class="tab-item" id="tab-profile" onclick="switchMobileTab('profile')">📋 巫師名冊</div>
+        <div class="tab-item" id="tab-forum" onclick="switchMobileTab('forum')">📱 校園傳聞</div>
+    </div>
+
+    <div class="game-container">
+        <aside class="sidebar" id="game-sidebar">
+            <div>
+                <div class="section-title">📋 學生即時動態檔案 (State Snapshot)</div>
+                <div id="profile-container" class="profile-box"></div>
+            </div>
+
+            <div id="forum-section" class="forum-section-container">
+                <div class="section-title">📱 校園流言蜚語 • 預言家日報動態快報</div>
+                <div id="forum-container" class="forum-box"></div>
+            </div>
+        </aside>
+
+        <main class="main-content" id="game-main">
+            <div id="story-stream" class="story-stream">
+                <div class="story-block">
+                    <p><strong>// 系統內核提示 //</strong> 歡迎來到置頂優先權傳遞協定。正在等待全新世界線初始化提交。請點擊上方金鑰配置以熱更新後端代碼...</p>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div id="choices-section">
+                    <div class="collapsible-header" onclick="toggleSection('choices-wrapper-content')">
+                        <div class="section-title">🎯 命運博弈分歧抉擇</div>
+                        <span class="toggle-icon" id="choices-wrapper-content-icon">▼ 摺疊面板</span>
+                    </div>
+                    <div id="choices-wrapper-content" class="collapsible-content">
+                        <div id="options-container" class="options-container"></div>
+                    </div>
+                </div>
+
+                <div class="decryption-box-wrapper" style="border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                    <div class="collapsible-header" onclick="toggleSection('decryption-wrapper-content')">
+                        <div class="section-title" style="color: var(--accent-magic); border-left-color: var(--accent-magic); font-size: 0.8rem;">🕵️ 【魔咒逆向工程】圖書館禁書區符文解密主控台</div>
+                        <span class="toggle-icon" id="decryption-wrapper-content-icon" style="color: var(--accent-magic);">▼ 展開面板</span>
+                    </div>
+                    <div id="decryption-wrapper-content" class="collapsible-content folded" style="margin-top: 10px;">
+                        <div class="decryption-input-wrapper">
+                            <input type="text" id="decrypt-id-input" placeholder="未知匿名ID">
+                            <input type="text" id="decrypt-guess-input" placeholder="【填入真實身份猜測或投入對抗的搏弈籌碼...】">
+                            <button onclick="submitDecryptionAction()" style="background-color: var(--accent-magic); color: #fff;">發起破譯</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading-indicator" class="loading-spinner hidden">
+                    <span>⚡ 正在投擲隱性骰點並解構大局自轉時鐘脈衝...</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="start-portal-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="toggleApiKeyModal()">&times;</button>
+            <h2>📜 霍格華茲學院 • 入學特質申報中樞</h2>
+            
+            <div id="portal-menu-view" class="options-container" style="margin-top: 20px;">
+                <button class="option-btn" onclick="navigateToPortalSubView('portal-char-view')">
+                    <strong>[ 軌道 A ]</strong> 建立全新原創世界線開局
+                </button>
+                <button class="option-btn" onclick="navigateToPortalSubView('portal-load-view')">
+                    <strong>[ 軌道 B ]</strong> 提取高比例 LZ-String 存檔代碼
+                </button>
+                <button class="option-btn" onclick="navigateToPortalSubView('portal-api-view')" style="text-align: center;">
+                    <span class="shrunk-dashed-title">配置大模型連線端口金鑰 API KEY</span>
+                </button>
+            </div>
+
+            <div id="portal-char-view" class="hidden" style="margin-top: 15px;">
+                <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 12px;">🌟 新生入學特質建檔</div>
+                <div class="modal-subsection-title">一、 基本檔案雙主鍵</div>
+                <div class="form-row">
+                    <div class="form-group"><label>中文姓名：</label><input type="text" id="char-name" value="林恩·沃克"></div>
+                    <div class="form-group"><label>英文譯名：</label><input type="text" id="char-eng-name" value="Lynn Walker"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>巫師性別：</label>
+                        <select id="char-gender"><option value="女">女 (妳/她)</option><option value="男" selected>男 (你/他)</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>血統起源 (重寫初始經濟難易度)：</label>
+                        <select id="char-blood">
+                            <option value="純血家族">純血家族 (開局 500 加隆，魅力常駐+10，自帶世家政爭包袱)</option>
+                            <option value="混血家庭" selected>混血家庭 (開局 150 加隆，不具包袱，解鎖黃金社交彈性)</option>
+                            <option value="麻瓜出身">麻瓜出身 (開局 30 加隆，匱乏開局，解鎖獨特麻瓜思維選項)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-subsection-title">二、 外貌與性格標籤之語意映射</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>外貌第一印象：</label>
+                        <select id="char-vibe">
+                            <option value="蒼白精緻 / 華貴">蒼白精緻 / 華貴 (【魅力】立即 +15，世家初始好感上升)</option>
+                            <option value="眼神銳利 / 孤僻">眼神銳利 / 孤僻 (【談吐】立即 +10，正派教授喜好降低)</option>
+                            <option value="溫和樸素 / 平凡">溫和樸素 / 平凡 (降低全校具名 NPC 的初始戒備防線)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>性格心理抗性天賦：</label>
+                        <select id="char-talent">
+                            <option value="冷靜沉著">冷靜沉著 (精神抗性：大失敗時心情跌幅被動降低 20%)</option>
+                            <option value="桀驁不馴">桀驁不馴 (冒險家：防禦術提升速度+15%，夜遊閃避判定+10%)</option>
+                            <option value="敏感多疑">敏感多疑 (防禦型：其餘 NPC 對玩家套話套謊成功率降低 30%)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-subsection-title">三、 命定戀愛對象自訂子系統 (青梅竹馬機制)</div>
+                <div class="form-row">
+                    <div class="form-group"><label>聚焦對象姓名：</label><input type="text" id="char-love-name" value="艾莉絲·華勒斯"></div>
+                    <div class="form-group">
+                        <label>對象性格動機標籤：</label>
+                        <select id="char-love-trait">
+                            <option value="傲嬌穩定">傲嬌穩定 (Tsundere)</option>
+                            <option value="利益至上">利益至上 (Utilitarian)</option>
+                            <option value="佔有欲極強 (病嬌)">佔有欲極強 (病嬌 ｜ 醋意值傳播雙倍暴增)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-subsection-title">四、 玩家偏好與分院傾向 (自決)</div>
+                <div class="form-group"><label>特殊體質選擇 (預設由魔杖共鳴觸發)：</label><input type="text" id="char-style" value="天然爬說嘴"></div>
+                <button class="modal-btn" onclick="triggerNewGameStart()">⚡ 簽署魔法名冊．踏上霍格華茲特快車</button>
+                <button class="modal-btn" style="background:#202533; color:#cbd5e1; border:1px solid var(--border-color);" onclick="returnToPortalMenu()">返回主選單</button>
+            </div>
+
+            <div id="portal-load-view" class="hidden" style="margin-top: 15px;">
+                <div style="background: rgba(155, 93, 229, 0.03); padding: 16px; border: 1px dashed var(--accent-magic); border-radius: 6px;">
+                    <div style="font-weight: bold; color: var(--accent-magic); margin-bottom: 8px;">💾 全狀態跨環境解密還原</div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">請在下方直接貼上由 LZ-String 演算法打包的 Base64 壓縮快照代碼：</p>
+                    <input type="text" id="import-token-input" placeholder="在此貼上加密進度密碼包...">
+                    <button class="modal-btn" onclick="triggerImportSaveStart()">注入密碼重構歷史時空線</button>
+                </div>
+                <button class="modal-btn" style="background:#202533; color:#cbd5e1; border:1px solid var(--border-color);" onclick="returnToPortalMenu()">返回主選單</button>
+            </div>
+
+            <div id="portal-api-view" class="hidden" style="margin-top: 15px;">
+                <div style="background: rgba(212,175,55,0.02); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 8px;">🔑 核心 LLM 供應商連線</div>
+                    <div class="form-group">
+                        <label>選擇後台神經網路引擎：</label>
+                        <select id="api-provider">
+                            <option value="gemini">Google Gemini (模型代號: gemini-3.5-flash)</option>
+                            <option value="openai">OpenAI ChatGPT (模型代號: gpt-4o-mini)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>配置核心 API 金鑰密鑰：</label>
+                        <input type="password" id="api-key-input" placeholder="輸入以 AIzaSy... 或 sk-proj-... 開頭的密鑰代碼">
+                    </div>
+                    <button class="modal-btn" onclick="saveApiKey()">綁定數據隧道端口</button>
+                </div>
+                <button class="modal-btn" style="background:#202533; color:#cbd5e1; border:1px solid var(--border-color);" onclick="returnToPortalMenu()">返回主選單</button>
+            </div>
+
+            <button class="modal-btn" id="portal-copy-btn" onclick="exportSaveToken()" style="background-color: #1a1f2c; color: var(--accent-gold); border: 1px solid var(--border-color); margin-top: 14px;">一鍵打包當前全數據快照碼</button>
+        </div>
+    </div>
+
+    <div id="decrypt-result-modal" class="modal-overlay hidden">
+        <div class="modal-content decrypt-modal-content">
+            <button class="modal-close-btn" onclick="closeDecryptResultModal()">&times;</button>
+            <div id="decrypt-icon" class="decrypt-status-icon">🔮</div>
+            <h2 id="decrypt-result-title">底層協議破解中</h2>
+            <p id="decrypt-result-message" style="font-size: 0.9rem; line-height: 1.5; margin: 12px 0;">正在對比目標代碼與記憶鏈矩陣...</p>
+            <button class="modal-btn" onclick="closeDecryptResultModal()" style="background-color: #202533; color: #fff;">確認端口變更</button>
+        </div>
+    </div>
 
     <script>
-        // 後端資料庫全狀態快照傳遞矩陣 (Snapshot Storage Protocol)
-        let engineState = {
-            player: { name: "林恩·沃克", house: "未分配", bloodline: "未定", tags: ["正常"] },
-            stats: { health: 100, mood: 100, charisma: 50, speech: 50, galleon: 0 },
-            skills: { transfiguration: 10, potions: 10, dada: 10, darkArts: 0 },
-            inventory: ["二手法術書"],
-            npcs: {
-                "奧利凡德": { favor: 0, alert: 10, title: "魔杖店主" },
-                "塞浦路斯教授": { favor: 0, alert: 40, title: "魔藥學主宰" },
-                "艾莉絲": { favor: 25, alert: 5, title: "同級青梅竹馬" }
-            },
-            timeline: { week: 1, phase: "入學背景審查" },
-            scenePointer: "creation_bloodline"
-        };
+        marked.setOptions({ breaks: true, gfm: true });
 
-        window.onload = function() {
-            triggerToast("🔮 霍格華茲架構模擬器引擎就緒", "success");
-            updateHUD();
-            advanceEngineScene();
-        };
+        // 預設 HUD 面板配置範本
+        const DEFAULT_PROFILE_MD = `
+# 🏛️ 霍格華茲 • 置頂數據快照面板
+| 屬性區段 | 常駐變量狀態 |
+| :--- | :--- |
+| **巫師姓名** | 載入中... |
+| **血統起源** | \`等待配置\` |
+| **分院院風** | \`未戴分院帽\` |
+| **當前年級** | 一年級前夕 |
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+### 📊 生理與精神抗性防線
+* 心情狀態跌幅： \`100 / 100\`
+* 肉體完整健康： \`100 / 100\`
+* 顯性狀態標籤： \`正常 (Normal)\`
+
+### 💰 經濟與社交話語權
+* 古靈閣總資產： \`0 Galleons\`
+* 第一印象魅力： \`50\` ｜ 言語說服談吐： \`50\`
+* 校園風雲知名： \`0 [無名小卒]\`
+
+### 🤝 聚焦 NPC 獨立持久關係矩陣
+> ⚠️ 關係解密追蹤狀態： \`[ 未發起禁書區破譯行動 ]\`
+`;
+
+        const DEFAULT_FORUM_MD = `
+# 📱 校園傳聞與預言家日報動態快報
+> ### 🔥 今日即時焦點傳聞
+> 📌 流言主旨： 【王冠與貴族】三大古老巫師世家權力矩陣重組
+> 👤 來源渠道： 貓頭鷹地下密信 ｜ 🕒 脈衝時間： \`週 Tick T1\`
+>
+> 「 壟斷飛天掃帚與傲羅軍備的卡文迪許家族、掌控古靈閣秘密對接的華勒斯家族、以及執掌巫審加摩的蒙特羅斯家族，正將目光投向霍格華茲新生名冊... 」
+`;
+
+        // 終極運作中樞核心系統提示詞 (與後端多輪對話無縫銜接)
+        const SYSTEM_INSTRUCTION = `
+《霍格華茲魔法學院人生模擬器》Engine Core Ver.3.0
+妳/你必須扮演完全平行的原創世界線 DM 遊戲主持人，抹除哈利波特原著人物。
+
+📌 世界觀三大世家設定：
+- 卡文迪許家族 (Cavendish)：壟斷飛天掃帚與傲羅軍備。
+- 華勒斯家族 (Valerius)：掌控古靈閣秘密對接與地下黑市。
+- 蒙特羅斯家族 (Montrose)：執掌巫審加摩與聖蒙果資源。
+原創置換教授：奧蕾莉亞·凡斯校長 (雷文克勞出身實用主義)、塞浦路斯教授 (史萊哲林魔藥學陰冷偏心)、布蘭博教授 (赫夫帕夫藥草學看守)。黑巫師威脅模型為「暮色議會 (The Twilight Council)」。
+
+📌 底層數據持存與對抗判定限制（⚠️ 絕對核心死鎖鎖定防禦）：
+1. 變量優先權：不論文字拉扯多長，妳/你生成的對話文本與面板必須強制讀取快照數據。
+2. 稱謂與代名詞精準物理隔離（依據教育部國語辭典規範執行）：
+   - 角色卡性別為【女】，稱呼玩家必須「100% 唯一嚴格使用『妳 / 她』」。
+   - 角色卡性別為【男】，稱呼玩家必須「100% 唯一嚴格使用『你 / 他』」。
+   - 男性人类 NPC 唯一使用『你 / 他』；女性人类 NPC 唯一使用『妳 / 她』。
+   - 客觀代碼、魔法符文、道具、防火牆協議唯一使用『它』。生物與奇獸唯一使用『牠』。
+3. 圖書館解密三次限制機制：針對禁書區符文未知代碼的解密，玩家最多 3 次嘗試機會。必須在狀態欄追蹤剩餘機會（例：\`0x4A1B\` 剩餘機會：3/3）。3次皆錯則鎖定，黑魔法傾向暴增，暮色議會好感狂跌。
+4. 目擊舉報演算分歧：非隱蔽場合施展黑魔法（Tier 1~3，伴隨永久上限削減公式），立即判定 NPC 舉報概率。
+
+🤖 AI 敘事排版控制協議：
+1. 每次回覆單次劇情純文字（不含面板與選項）「必須嚴格高於 1000 字」，重大節點高於 1200 字。包含精細環境鋪陳與 NPC 微表情肢體描寫。所有對白必須符合大韓民國豪門恩怨或英倫冷酷世家語境，台詞一律使用中文雙引號「」。
+2. 每段劇情結尾提供的 【A】、【B】、【C】 三個分歧選項，其選項文字長度「每一項都必須嚴格超過 200 字」高密度推演，且各自包含屬性損耗或恢復係數（例如心情值修復、健康值恢復）。「絕對禁止」輸出關於 【D】 選項的文字。禁止顯示任何字數標註如「(共 X 字)」等提示性贅字。
+
+📌 每次回覆輸出順序必須嚴格遵循以下Token標記，使用分隔線 --- 物理隔离：
+[ 📋 學生即時動態檔案 ]
+# 🏛️ 霍格華茲 • 置頂數據快照面板
+### 👤 基本檔案
+### 📊 生理與精神抗性防線
+### 經濟與社交話語權
+### 🤝 聚焦 NPC 獨立持久關係矩陣
+---
+[ 🎬 劇情 ]
+---
+[ 📱 校園傳聞與預言家日報動態快報 ]
+# 📱 校園傳聞與預言家日報動態快報
+> ### 🔥 今日即時焦點傳聞
+> 📌 流言主旨： ...
+> ## 📄 【傳聞內文】
+> 「 ... 」
+### 💬 實時地下評論流
+### 📊 魔法網絡風向統計
+---
+[ 🎯 分歧選項 ]
+`;
+
+        let chatHistory = [];
+        let isWaitingForAI = false;
+        let localTokenID = "0x" + Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase();
+
+        function switchMobileTab(tabId) {
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.body.className = ''; 
+            if (tabId === 'profile') document.body.classList.add('show-profile');
+            else if (tabId === 'forum') document.body.classList.add('show-forum');
+            else document.body.classList.add('show-story');
         }
 
-        function triggerToast(message, type = "normal") {
-            let container = document.getElementById('toast-container');
-            let t = document.createElement('div');
-            t.className = `toast ${type}`;
-            t.innerText = message;
-            container.appendChild(t);
-            setTimeout(() => { t.remove(); }, 3500);
+        async function getPlayerHashID(key) {
+            const msgBuffer = new TextEncoder().encode(key);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        function updateHUD() {
-            document.getElementById('timeline-indicator').innerText = `📅 第 ${engineState.timeline.week} 週 ｜ ${engineState.timeline.phase}`;
-            document.getElementById('hud-name').innerText = engineState.player.name;
-            document.getElementById('hud-house').innerText = engineState.player.house;
-            document.getElementById('hud-health').innerText = `${engineState.stats.health}/100`;
-            document.getElementById('hud-mood').innerText = `${engineState.stats.mood}/100`;
-            document.getElementById('hud-charisma').innerText = engineState.stats.charisma;
-            document.getElementById('hud-speech').innerText = engineState.stats.speech;
-            document.getElementById('hud-galleon').innerText = `${engineState.stats.galleon} G`;
-            document.getElementById('hud-tags').innerText = engineState.player.tags.join(', ');
-            
-            document.getElementById('spell-trans').innerText = `${engineState.skills.transfiguration}%`;
-            document.getElementById('spell-potions').innerText = `${engineState.skills.potions}%`;
-            document.getElementById('spell-dada').innerText = `${engineState.skills.dada}%`;
-            document.getElementById('spell-dark').innerText = `${engineState.skills.darkArts}%`;
-
-            document.getElementById('inventory-list').innerHTML = engineState.inventory.map(i => `<li>${i}</li>`).join('');
-
-            let npcBox = document.getElementById('npc-list-container');
-            let npcHTML = "";
-            for(let key in engineState.npcs) {
-                let n = engineState.npcs[key];
-                npcHTML += `
-                    <div style="background:rgba(255,255,255,0.01); padding:8px; border:1px solid var(--panel-brd); border-radius:4px;">
-                        <span style="color:var(--accent-gold); font-weight:bold;">${key}</span> <span style="font-size:0.7rem; color:var(--text-muted);">(${n.title})</span><br>
-                        好感度: ${n.favor} ｜ 戒備值: ${n.alert}
-                    </div>
-                `;
-            }
-            npcBox.innerHTML = npcHTML;
+        async function saveGameToCloud() {
+            const key = localStorage.getItem('game_api_key');
+            if (!key || chatHistory.length === 0) return;
+            try {
+                const hashID = await getPlayerHashID(key);
+                await fetch(`https://api.npoint.io/hogwarts_rpg_saves_${hashID}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatHistory: chatHistory })
+                });
+            } catch (e) { console.warn("快取轉入持久層儲存中。"); }
+            localStorage.setItem('hogwarts_local_save_' + localTokenID, JSON.stringify(chatHistory));
         }
 
-        function writeToStream(sender, content, type = "system") {
-            let stream = document.getElementById('log-stream');
-            let row = document.createElement('div');
-            row.className = `log-row ${type}`;
-            row.innerHTML = `<div class="log-sender">${sender}</div><div class="log-bubble">${content}</div>`;
-            stream.appendChild(row);
-            stream.scrollTop = stream.scrollHeight;
-        }
-
-        // 核心狀態機控制中樞
-        function advanceEngineScene() {
-            let wrapper = document.getElementById('options-wrapper');
-            wrapper.innerHTML = "";
-            
-            if(engineState.scenePointer === "creation_bloodline") {
-                writeToStream("【系統提示】", "自轉時鐘已鎖定快照優先權。請先勾選新生的血管起源以重寫初始面板數據。", "system");
-                
-                // 常規選項
-                createDynamicOption({
-                    text: "👑 申報『純血古老世家』背景 (初始資產資產 500 加隆)",
-                    badgeText: "資產豐富", badgeClass: "badge-rec",
-                    action: () => { setupBloodline("純血家族", 500); }
-                });
-                createDynamicOption({
-                    text: "⚜️ 申報『麻瓜出身巫師』背景 (開局解鎖獨特麻瓜思維)",
-                    badgeText: "解鎖特權", badgeClass: "badge-rec",
-                    action: () => { setupBloodline("麻瓜出身", 30); }
-                });
-            } 
-            else if(engineState.scenePointer === "ollivander_shop") {
-                writeToStream("【斜角巷靜態錨點】", "奧利凡德魔杖店內幾千個盒子散發著魔力殘響。老人銀白色的雙眼凝視著你。", "system");
-                writeToStream("【加里克·奧利凡德】", "「來吧，孩子，伸出右手。有些人的血管裡流淌著雷電，有些人的靈魂裡藏著黑夜...」", "npc");
-                
-                createDynamicOption({
-                    text: "【安全穩定之盾】細緻摸索獨角獸毛木盒",
-                    badgeText: "+5% 成功率", badgeClass: "badge-rec",
-                    action: () => { chooseWand("獨角獸毛", 5); }
-                });
-                createDynamicOption({
-                    text: "【毀滅暴走之矛】瘋狂對接龍的心弦殘響",
-                    badgeText: "+10% 威力", badgeClass: "badge-danger",
-                    action: () => { chooseWand("龍的心弦", 10); }
-                });
-            }
-            else if(engineState.scenePointer === "sorting_ceremony") {
-                engineState.timeline.phase = "大禮堂分院帽儀式";
-                writeToStream("【霍格華茲大禮堂】", "破舊的分院帽落入你的頭頂，冰冷的低語在你的腦海深處猛烈炸響。", "system");
-                writeToStream("【分院帽】", "「我看見了渴望，看到了極具張力的意志。你想與哪一個世家陣營結盟？」", "npc");
-                
-                createDynamicOption({
-                    text: "【順應命定推薦】走向高傲求知的「雷文克勞」長桌",
-                    badgeText: "聲望+15", badgeClass: "badge-rec",
-                    action: () => { completeSorting("雷文克勞", 15); }
-                });
-                createDynamicOption({
-                    text: "【自由意志對抗】強行覆寫數據，踏入階級分明的「史萊哲林」",
-                    badgeText: "家族包袱", badgeClass: "badge-danger",
-                    action: () => { completeSorting("史萊哲林", -10); }
-                });
-            }
-            else if(engineState.scenePointer === "weekly_loop") {
-                engineState.timeline.phase = `第 ${engineState.timeline.week} 週自轉脈衝`;
-                writeToStream("【時間線指引】", "校園的齒輪向前自轉推進。請分派本週的核心行動時段。", "system");
-
-                // 1. 常規日間課程選項
-                createDynamicOption({
-                    text: "🧪 【強制日間課程】參與塞浦路斯教授的魔藥學實作 (心情-12)",
-                    badgeText: "技能培訓", badgeClass: "badge-rec",
-                    action: () => { runClassAction(); }
-                });
-
-                // 2. 社交選項 (依據資產動態重構：餘額不足則變灰鎖死)
-                let canAffordDate = engineState.stats.galleon >= 5;
-                createDynamicOption({
-                    text: canAffordDate ? "💞 【自由活動時間】邀請艾莉絲前往黑湖畔約會 (消耗 5 加隆)" : "🔒 【加隆匱乏】無法發起艾莉絲的黑湖約會行動",
-                    badgeText: canAffordDate ? "好感解鎖" : "資產不足",
-                    badgeClass: canAffordDate ? "badge-rec" : "badge-lock",
-                    disabled: !canAffordDate,
-                    action: () => { runSocialAction(); }
-                });
-
-                // 3. 高風險夜遊選項 (依據肉體狀態動態重構：若受傷/虛弱則完全封鎖)
-                let isInjured = engineState.player.tags.includes("受傷") || engineState.stats.health < 40;
-                createDynamicOption({
-                    text: isInjured ? "🔒 【肉體重傷禁足】後端強制鎖死高危險夜遊權限" : "🌲 【高風險夜間行動】宵禁後潛入禁忌森林邊緣採集奇獸素材",
-                    badgeText: isInjured ? "行動限制" : "高危暴利",
-                    badgeClass: isInjured ? "badge-lock" : "badge-danger",
-                    disabled: isInjured,
-                    action: () => { runNightRoamAction(); }
-                });
-
-                // 4. 新增：【回復指數專用選項】 ── 安穩睡眠
-                createDynamicOption({
-                    text: "🛏️ 【恢復時段：安穩睡眠】回到學院新宿舍進行魔力調息",
-                    badgeText: "心情+15 ｜ 健康+20 ｜ 拔除負面狀態",
-                    badgeClass: "badge-rec",
-                    isRecovery: true, // 觸發綠色輝芒樣式
-                    action: () => { runRecoveryAction(); }
-                });
-
-                // 5. 新增：【血統動態特權選項】 ── 只有麻瓜出身才能觸發的獨特思維
-                if (engineState.player.bloodline === "麻瓜出身") {
-                    createDynamicOption({
-                        text: "🧠 【麻瓜思維 (Muggle Logic)】利用非傳統邏輯解析古代煉金矩陣",
-                        badgeText: "隱藏特權",
-                        badgeClass: "badge-rec",
-                        isTrait: true, // 觸發藍色特權樣式
-                        action: () => { runMuggleTraitAction(); }
-                    });
+        async function loadGameFromCloud() {
+            const key = localStorage.getItem('game_api_key');
+            if (!key) return false;
+            try {
+                const hashID = await getPlayerHashID(key);
+                const response = await fetch(`https://api.npoint.io/hogwarts_rpg_saves_${hashID}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.chatHistory) {
+                        restoreGameState(data.chatHistory);
+                        return true;
+                    }
+                }
+            } catch (e) {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const localKey = localStorage.key(i);
+                    if (localKey.startsWith('hogwarts_local_save_')) {
+                        restoreGameState(JSON.parse(localStorage.getItem(localKey)));
+                        return true;
+                    }
                 }
             }
-            else if(engineState.scenePointer === "died") {
-                writeToStream("【終極夭折結局】", "面板數值脫節歸零，資料庫即時鎖定。你被送往聖蒙果魔法醫院精神傷害科。", "system");
+            return false;
+        }
+
+        function exportSaveToken() {
+            if (chatHistory.length === 0) { alert("當前記憶軌道無快照可供封包。"); return; }
+            try {
+                let exportData = { c: null, h: [], l: null };
+                const cardNode = chatHistory.find(h => h.role === "user" && h.text.includes("【玩家角色卡提交"));
+                if (cardNode) exportData.c = cardNode.text;
+                exportData.h = chatHistory
+                    .filter(h => h.role === "user" && !h.text.includes("【核心系統指令") && !h.text.includes("【玩家角色卡提交"))
+                    .map(h => h.text);
+                const lastModelResponse = [...chatHistory].reverse().find(h => h.role === "model");
+                if (lastModelResponse) exportData.l = lastModelResponse.text;
+
+                const token = LZString.compressToBase64(JSON.stringify(exportData));
+                
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(token).then(() => {
+                        alert("📋 時空快照已成功使用 LZ-String 演算法封包並複製至剪貼簿！");
+                    }).catch(() => { fallbackCopyText(token); });
+                } else { fallbackCopyText(token); }
+            } catch (e) { alert("進度打包失敗: " + e.message); }
+        }
+
+        function fallbackCopyText(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text; textArea.style.position = "fixed"; document.body.appendChild(textArea);
+            textArea.focus(); textArea.select();
+            try {
+                document.execCommand('copy');
+                alert("📋 [相容端口配對] 壓縮跨裝置快照代碼已成功複製！");
+            } catch (err) {
+                prompt("自動複製受限，請全選手動複製框內代碼：", text);
             }
+            document.body.removeChild(textArea);
+        }
+
+        function restoreGameState(historyArray) {
+            chatHistory = historyArray;
+            const lastModelResponse = [...chatHistory].reverse().find(h => h.role === "model");
+            if (lastModelResponse) {
+                document.getElementById('story-stream').innerHTML = `<div class="story-block"><p style="color:var(--accent-gold);"><strong>// 時空裂隙逆流重組完畢 //</strong> 已同步最新霍格華茲局勢數據面板。</p></div>`;
+                parseAndPopulateUI(lastModelResponse.text);
+                document.getElementById('start-portal-modal').classList.add('hidden');
+            }
+        }
+
+        window.onload = function() {
+            document.getElementById('profile-container').innerHTML = marked.parse(DEFAULT_PROFILE_MD);
+            document.getElementById('forum-container').innerHTML = marked.parse(DEFAULT_FORUM_MD);
             
-            updateHUD();
-        }
-
-        // 動態重構按鈕渲染引擎 (支援恢復、特權、禁用、標籤提示)
-        function createDynamicOption(config) {
-            let wrapper = document.getElementById('options-wrapper');
-            let btn = document.createElement('button');
-            btn.className = "btn-option";
+            const savedKey = localStorage.getItem('game_api_key');
             
-            // 依據狀況動態賦予樣式類別
-            if (config.isRecovery) btn.classList.add('recovery-mode');
-            if (config.isTrait) btn.classList.add('trait-unlocked');
-            if (config.disabled) btn.disabled = true;
+            setTimeout(() => {
+                const canvas = document.getElementById('opening-canvas');
+                canvas.style.opacity = '0';
+                setTimeout(() => {
+                    canvas.style.visibility = 'hidden';
+                    document.getElementById('start-portal-modal').classList.remove('hidden');
+                    returnToPortalMenu(); 
+                    if (savedKey) {
+                        document.getElementById('api-key-input').value = savedKey;
+                        document.getElementById('api-provider').value = localStorage.getItem('game_api_provider') || 'gemini';
+                        loadGameFromCloud();
+                    }
+                }, 1500);
+            }, 3500);
+        };
 
-            // 組裝內部按鈕文本與動態標籤
-            btn.innerHTML = `<span>${config.text}</span><span class="indicator-badge ${config.badgeClass}">${config.badgeText}</span>`;
+        function navigateToPortalSubView(viewId) {
+            const key = document.getElementById('api-key-input').value.trim() || localStorage.getItem('game_api_key');
+            if ((viewId === 'portal-char-view' || viewId === 'portal-load-view') && !key) {
+                alert('🚨 權力審查未通過：在解鎖命運軌道前，必須先配置有效的模型金鑰連線密鑰！');
+                navigateToPortalSubView('portal-api-view'); return;
+            }
+            document.getElementById('portal-menu-view').classList.add('hidden');
+            document.getElementById('portal-char-view').classList.add('hidden');
+            document.getElementById('portal-load-view').classList.add('hidden');
+            document.getElementById('portal-api-view').classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function returnToPortalMenu() {
+            document.getElementById('portal-menu-view').classList.remove('hidden');
+            document.getElementById('portal-char-view').classList.add('hidden');
+            document.getElementById('portal-load-view').classList.add('hidden');
+            document.getElementById('portal-api-view').classList.add('hidden');
+        }
+
+        function toggleApiKeyModal() { document.getElementById('start-portal-modal').classList.toggle('hidden'); }
+
+        function checkAndLockApiKey() {
+            const provider = document.getElementById('api-provider').value;
+            const key = document.getElementById('api-key-input').value.trim();
+            if (!key) { alert('🚨 端口空解鎖阻斷：請配置有效的連線密鑰！'); return false; }
+            localStorage.setItem('game_api_provider', provider);
+            localStorage.setItem('game_api_key', key);
+            return true;
+        }
+
+        function saveApiKey() {
+            if (!checkAndLockApiKey()) return;
+            alert('🟢 數據金鑰神經網路端口對接就緒！已解鎖入學權限。');
+            returnToPortalMenu();
+        }
+
+        function triggerNewGameStart() { startStoryGame(); }
+
+        function triggerImportSaveStart() {
+            const rawToken = document.getElementById('import-token-input').value.trim();
+            if (!rawToken) { alert("不准遞交空字串符文！"); return; }
+            try {
+                const jsonStr = LZString.decompressFromBase64(rawToken);
+                if (!jsonStr) throw new Error("解壓軌道不完整，密碼損壞。");
+                const exportData = JSON.parse(jsonStr);
+                
+                if (!exportData.c || !exportData.l) throw new Error("缺少角色原始基因快照。");
+
+                let rebuiltHistory = [
+                    { role: "user", text: `【核心系統指令與世界觀載入】\n${SYSTEM_INSTRUCTION}\n\n請理解上述所有規則，並準備好扮演遊戲主持人。` },
+                    { role: "model", text: "【系統提示】霍格華茲 Core V3.0 後端狀態資料庫初始化完畢。" },
+                    { role: "user", text: exportData.c }
+                ];
+
+                if (exportData.h && exportData.h.length > 0) {
+                    for (let i = 0; i < exportData.h.length; i++) {
+                        rebuiltHistory.push({ role: "model", text: `[系統快照平滑同步歷史抉擇進度點 #${i+1}]` });
+                        rebuiltHistory.push({ role: "user", text: exportData.h[i] });
+                    }
+                }
+                rebuiltHistory.push({ role: "model", text: exportData.l });
+                restoreGameState(rebuiltHistory);
+                alert("🟢 數據快照覆寫導入成功！歷史命軌已重組復原。");
+            } catch (e) { alert("進度還原死鎖鎖定失敗: " + e.message); }
+        }
+
+        function restartGame() {
+            if (confirm('確定要徹底抹除在校紀錄並重置新生名冊嗎？（當前未存檔數據將丟失）')) {
+                chatHistory = [];
+                document.getElementById('story-stream').innerHTML = `<div class="story-block"><p><strong>【系統提示】</strong> 歷史時空已解構，等待重新引導建檔...</p></div>`;
+                document.getElementById('options-container').innerHTML = '';
+                document.getElementById('profile-container').innerHTML = marked.parse(DEFAULT_PROFILE_MD);
+                document.getElementById('forum-container').innerHTML = marked.parse(DEFAULT_FORUM_MD);
+                document.getElementById('start-portal-modal').classList.remove('hidden');
+            }
+        }
+
+        function startStoryGame() {
+            const name = document.getElementById('char-name').value.trim();
+            const engName = document.getElementById('char-eng-name').value.trim();
+            const gender = document.getElementById('char-gender').value;
+            const blood = document.getElementById('char-blood').value;
+            const vibe = document.getElementById('char-vibe').value;
+            const talent = document.getElementById('char-talent').value;
+            const loveName = document.getElementById('char-love-name').value.trim();
+            const loveTrait = document.getElementById('char-love-trait').value;
+            const style = document.getElementById('char-style').value.trim();
+
+            if (!name || !engName || !loveName) {
+                alert('基本檔案雙主鍵與命定戀愛對象不可為空！'); return;
+            }
+
+            let initialGalleons = blood === "純血家族" ? 500 : (blood === "混血家庭" ? 150 : 30);
             
-            btn.onclick = function() {
-                document.querySelectorAll('.btn-option').forEach(b => b.disabled = true);
-                config.action();
-            };
-            wrapper.appendChild(btn);
+            const initialLocalProfile = `
+# 🏛️ 霍格華茲 • 置頂數據快照面板
+
+### 👤 基本檔案雙主鍵
+| 屬性欄位 | 變量映射數據值 |
+| :--- | :--- |
+| **中文姓名** | ${name} |
+| **英文譯名** | ${engName} |
+| **血統起源** | \`${blood}\` |
+| **分配學院** | \`分院帽儀式準備中\` |
+| **匿名代碼** | \`${localTokenID}\` |
+
+### 📊 生理與精神抗性防線
+* 心情狀態跌幅： \`100 / 100\`
+* 肉體完整健康： \`100 / 100\`
+* 顯性狀態標籤： \`正常 (Normal)\` ｜ 天賦： \`${talent}\`
+
+### 經濟與社交話語權
+* 古靈閣總資產： \`${initialGalleons} Galleons\`
+* 視覺外貌魅力： \`50 (外貌映射: ${vibe})\`
+* 言語說服談吐： \`50\`
+* 校園知名標題： \`0 [無名小卒]\`
+
+### 🤝 聚焦 NPC 獨立持久關係矩陣
+1. ${loveName} (青梅竹馬 ｜ 性格: ${loveTrait}) ｜ 好感度: \`+25\` ｜ 戒備值: \`+5\`
+2. 奧蕾莉亞·凡斯 校長 (功能主席: 雷文克勞) ｜ 好感度: \`0\` ｜ 戒備值: \`+20\`
+`;
+            document.getElementById('profile-container').innerHTML = marked.parse(initialLocalProfile);
+            document.getElementById('story-stream').innerHTML = '';
+
+            chatHistory = [
+                { role: "user", text: `【核心系統指令與世界觀載入】\n${SYSTEM_INSTRUCTION}\n\n請理解上述所有規則，並準備好扮演遊戲主持人。` },
+                { role: "model", text: "【系統提示】霍格華茲人生模擬器引擎外殼加載完畢。隔離防線已全面鎖定。" }
+            ];
+
+            const characterCardPrompt = `
+【玩家角色卡提交 - 遊戲正式開啟】
+這是新生的初始化屬性快照配置，請調用此面板覆寫差值並演繹第一章序章劇情（九又四分之三月台與特快車遭遇）：
+- 姓名與英文：${name} / ${engName} ｜ 性別代名詞限制：${gender}
+- 血統：${blood} (初始資產: ${initialGalleons} 加隆) ｜ 天賦特質體質：${style}
+- 映射標籤：外貌(${vibe}) ｜ 性格(${talent})
+- 命定自訂攻略對象常駐錨定：${loveName} (性格: ${loveTrait}，初始好感+25/戒備+5/醋意0)
+
+請直接開啟第一幕時段循環，並嚴格按照規範的四段物理隔離格式進行Token輸出。`;
+
+            document.getElementById('start-portal-modal').classList.add('hidden');
+            sendPromptToAI(characterCardPrompt);
         }
 
-        // 行為控制分支
-        function setupBloodline(line, money) {
-            engineState.player.bloodline = line;
-            engineState.stats.galleon = money;
-            engineState.scenePointer = "ollivander_shop";
-            triggerToast(`💰 經濟難易度重寫：獲得 ${money} G`, "success");
-            advanceEngineScene();
+        async function sendPromptToAI(userPrompt) {
+            if (isWaitingForAI) return;
+            const provider = localStorage.getItem('game_api_provider') || 'gemini';
+            const apiKey = localStorage.getItem('game_api_key');
+            if (!apiKey) { restartGame(); return; }
+
+            setLoading(true);
+            chatHistory.push({ role: "user", text: userPrompt });
+
+            try {
+                let response, data, aiResponseText = "";
+                if (provider === 'gemini') {
+                    const geminiContents = chatHistory.map(h => ({
+                        role: h.role === "model" ? "model" : "user",
+                        parts: [{ text: h.text }]
+                    }));
+                    response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: geminiContents,
+                            generationConfig: { temperature: 0.75, maxOutputTokens: 8192 }
+                        })
+                    });
+                    data = await response.json();
+                    if (data.error) throw new Error(data.error.message);
+                    aiResponseText = data.candidates[0].content.parts[0].text;
+                } else {
+                    const openaiMessages = chatHistory.map(h => ({
+                        role: h.role === "model" ? "assistant" : "user",
+                        content: h.text
+                    }));
+                    response = await fetch(`https://api.openai.com/v1/chat/completions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({ model: "gpt-4o-mini", messages: openaiMessages, temperature: 0.75 })
+                    });
+                    data = await response.json();
+                    if (data.error) throw new Error(data.error.message);
+                    aiResponseText = data.choices[0].message.content;
+                }
+
+                chatHistory.push({ role: "model", text: aiResponseText });
+                parseAndPopulateUI(aiResponseText);
+                saveGameToCloud(); 
+
+            } catch (error) {
+                console.error(error); alert(`⚠️ 時空隧道斷流: ${error.message}`); chatHistory.pop();
+            } finally { setLoading(false); } 
         }
 
-        function chooseWand(core, bonus) {
-            engineState.inventory.push(`黑胡桃木魔杖 (${core})`);
-            engineState.wand = { core: core, bonus: bonus };
-            engineState.scenePointer = "sorting_ceremony";
-            triggerToast(`🪄 命定魔杖鎖定：成功率修正+${bonus}%`, "success");
-            advanceEngineScene();
-        }
+        function parseAndPopulateUI(rawText) {
+            const regexProfile = /(?:\[\s*📋\s*學生即時動態檔案\s*\]|#+\s*📋\s*學生即時動態檔案|#+\s*霍格華茲\s*•\s*置頂數據快照面板|#+\s*學生即時動態檔案)/i;
+            const regexStory = /(?:\[\s*🎬\s*劇情\s*\]|#+\s*🎬\s*劇情|#+\s*當前劇情)/i;
+            const regexForum = /(?:\[\s*📱\s*校園傳聞\s*\]|#+\s*📱\s*校園傳聞與預言家日報動態快報|#+\s*校園傳聞與預言家日報)/i;
+            const regexOptions = /(?:\[\s*🎯\s*分歧選項\s*\]|#+\s*🎯\s*分歧選項|#+\s*🎯\s*命運博弈分歧抉擇)/i;
 
-        function completeSorting(house, rep) {
-            engineState.player.house = house;
-            engineState.player.year = "一年級（第一學期）";
-            engineState.skills.transfiguration = 15;
-            engineState.scenePointer = "weekly_loop";
-            triggerToast(`🦅 院風儀式落幕：分入 ${house}`, "success");
-            advanceEngineScene();
-        }
+            let posProfile = rawText.search(regexProfile);
+            let posStory = rawText.search(regexStory);
+            let posForum = rawText.search(regexForum);
+            let posOptions = rawText.search(regexOptions);
 
-        // 常規日間上課
-        function runClassAction() {
-            engineState.stats.mood -= 12;
-            let dice = Math.floor(Math.random() * 100) + 1;
-            if(dice <= 60) {
-                engineState.skills.potions += 8;
-                engineState.stats.galleon += 15;
-                writeToStream("【玩家行動】", "你冷靜地完成了塞浦路斯教授的藥材調配。「」", "player");
-                triggerToast("✨ 魔藥學熟練度提升 ｜ 加隆+15", "success");
-            } else {
-                writeToStream("【系統提示】", "魔咒走火大爆炸！地窖課堂陷入混亂。", "system");
-                triggerToast("❌ 課堂大失敗", "danger");
+            let sectionsFound = [];
+            if (posProfile !== -1) sectionsFound.push({ id: 'profile', pos: posProfile, regex: regexProfile });
+            if (posStory !== -1) sectionsFound.push({ id: 'story', pos: posStory, regex: regexStory });
+            if (posForum !== -1) sectionsFound.push({ id: 'forum', pos: posForum, regex: regexForum });
+            if (posOptions !== -1) sectionsFound.push({ id: 'options', pos: posOptions, regex: regexOptions });
+
+            sectionsFound.sort((a, b) => a.pos - b.pos);
+            let extracted = { profile: "", story: "", forum: "", options: "" };
+
+            for (let i = 0; i < sectionsFound.length; i++) {
+                let start = sectionsFound[i].pos;
+                let end = (i + 1 < sectionsFound.length) ? sectionsFound[i+1].pos : rawText.length;
+                let blockText = rawText.substring(start, end).trim();
+                blockText = blockText.replace(sectionsFound[i].regex, "").trim();
+                extracted[sectionsFound[i].id] = blockText;
             }
-            nextTickCheck();
-        }
 
-        // 社交約會 (消耗 5 加隆)
-        function runSocialAction() {
-            engineState.stats.galleon -= 5;
-            engineState.npcs["艾莉絲"].favor += 15;
-            engineState.npcs["艾莉絲"].alert -= 5;
-            writeToStream("【玩家對話】", "「艾莉絲，陪我去湖邊吹吹風吧，我帶了熱黃油啤酒。」", "player");
-            writeToStream("【艾莉絲】", "「「真是的……你總是挑我最累的時候過來。不過看在啤酒的份上，走吧。」」", "npc");
-            triggerToast("💞 曖昧對象好感度劇烈上升", "success");
-            nextTickCheck();
-        }
-
-        // 高風險夜遊
-        function runNightRoamAction() {
-            let dice = Math.floor(Math.random() * 100) + 1;
-            if(dice <= 40) {
-                engineState.stats.health -= 45;
-                engineState.player.tags = ["受傷"];
-                writeToStream("【夜間危機捕捉】", "你在森林深處驚動了奇獸爪牙，右臂遭到撕裂性重創！被動獲得 [受傷] 狀態。", "system");
-                triggerToast("🩸 遭遇肉體重創：健康-45", "danger");
-            } else {
-                engineState.stats.galleon += 80;
-                engineState.skills.darkArts += 5;
-                writeToStream("【玩家行動】", "你順利切下獨角獸的尾毛，在翻倒巷地下黑市換取了高額暴利。", "player");
-                triggerToast("💰 黑市走私大成功：加隆+80", "success");
+            if (sectionsFound.length < 2) {
+                const fallback = rawText.split(/\n---\n|\n---\s*\n/);
+                if (fallback.length >= 3) {
+                    extracted.profile = fallback[0]; extracted.story = fallback[1];
+                    if (fallback.length >= 4) { extracted.forum = fallback[2]; extracted.options = fallback[3]; }
+                    else extracted.options = fallback[2];
+                } else { extracted.story = rawText; }
             }
-            nextTickCheck();
+
+            if (extracted.profile) {
+                document.getElementById('profile-container').innerHTML = marked.parse(extracted.profile.replace(/^[\s\-=\*]+/g, "").trim());
+                if (rawText.includes("破譯成功") || rawText.includes("共鳴成功")) {
+                    showDecryptionResultWindow("🔑 禁書區解密成功", "逆向工程破解完畢！未知符文對接成功。");
+                } else if (rawText.includes("解密大失敗") || rawText.includes("魔力反噬")) {
+                    showDecryptionResultWindow("🚨 禁忌警告：解密失敗", "觸動古老防禦詛咒！威脅係數異動。");
+                }
+            }
+
+            if (extracted.story) {
+                const stream = document.getElementById('story-stream');
+                const block = document.createElement('div');
+                block.className = 'story-block';
+                block.innerHTML = marked.parse(extracted.story.replace(/^[\s\-=\*]+/g, "").trim());
+                stream.appendChild(block);
+                setTimeout(() => { stream.scrollTop = stream.scrollHeight; }, 100);
+            }
+
+            if (extracted.forum) {
+                document.getElementById('forum-container').innerHTML = marked.parse(extracted.forum.replace(/^[\s\-=\*]+/g, "").trim());
+            }
+
+            if (extracted.options) {
+                document.getElementById('choices-wrapper-content').classList.remove('folded');
+                parseOptionsToButtons(extracted.options);
+            }
         }
 
-        // 核心新增功能：【回復指數運算機制】
-        function runRecoveryAction() {
-            // 執行恢復加權
-            engineState.stats.mood = Math.min(100, engineState.stats.mood + 15);
-            engineState.stats.health = Math.min(100, engineState.stats.health + 20);
+        function parseOptionsToButtons(optionsText) {
+            const container = document.getElementById('options-container'); container.innerHTML = "";
+            const regex = /(【A】|【B】|【C】|A\.|B\.|C\.)([\s\S]*?)(?=(【A】|【B】|【C】|【D】|A\.|B\.|C\.|D\.|$))/g;
+            let match; let btnCount = 0;
             
-            // 清除受傷與疲憊等負面狀態標籤
-            engineState.player.tags = ["正常"];
+            while ((match = regex.exec(optionsText)) !== null) {
+                btnCount++; const label = match[1].trim(); const text = match[2].replace(/\*\*/g, '').trim();
+                const btn = document.createElement('button');
+                btn.className = 'option-btn'; btn.innerHTML = `<strong>${label}</strong> ${text}`;
+                btn.onclick = () => selectChoice(label, text);
+                container.appendChild(btn);
+            }
+            if (btnCount === 0) container.innerHTML = marked.parse(optionsText);
+
+            const dBlock = document.createElement('div');
+            dBlock.className = 'custom-input-wrapper';
+            dBlock.innerHTML = `<input type="text" id="custom-choice-input" placeholder="【D】去結構化自訂行動、心靈博弈、編造謊言、拔出魔杖..."><button onclick="submitCustomChoice()">執行</button>`;
+            container.appendChild(dBlock);
+        }
+
+        function selectChoice(label, text) {
+            const fullActionText = `【我推進了抉擇軌道 ${label}：${text}】`;
+            const stream = document.getElementById('story-stream');
+            const choiceBlock = document.createElement('div');
+            choiceBlock.className = 'story-block';
+            choiceBlock.style.borderLeft = '4px solid var(--accent-gold)';
+            choiceBlock.innerHTML = `<p style="color: var(--accent-gold); font-weight: bold;">${fullActionText}</p>`;
+            stream.appendChild(choiceBlock); stream.scrollTop = stream.scrollHeight;
+            if (window.innerWidth <= 768) switchMobileTab('story');
+            sendPromptToAI(fullActionText);
+        }
+
+        function submitCustomChoice() {
+            const inputEl = document.getElementById('custom-choice-input'); const customText = inputEl.value.trim();
+            if (!customText) return;
+            const fullActionText = `【【D】新生自由行為去結構化決策】：${customText}`;
+            inputEl.value = "";
+            const stream = document.getElementById('story-stream');
+            const choiceBlock = document.createElement('div');
+            choiceBlock.className = 'story-block'; choiceBlock.style.borderLeft = '4px solid #fff';
+            choiceBlock.innerHTML = `<p style="color: #fff; font-weight: bold;">${fullActionText}</p>`;
+            stream.appendChild(choiceBlock); stream.scrollTop = stream.scrollHeight;
+            sendPromptToAI(fullActionText);
+        }
+
+        function submitDecryptionAction() {
+            const idEl = document.getElementById('decrypt-id-input'); const guessEl = document.getElementById('decrypt-guess-input');
+            const targetId = idEl.value.trim(); const guessText = guessEl.value.trim();
+            if (!targetId || !guessText) { alert('請填入未知的代碼與逆向工程手段！'); return; }
             
-            writeToStream("【深層調息修復】", "你鎖上了新宿舍的黑木門，在安穩的睡眠中修復體內透支的魔力與肉體裂紋。傷口開始癒合，焦慮逐漸消散。", "system");
-            triggerToast("💚 生理防線修復：心情+15 ｜ 健康+20 ｜ 負面標籤全數拔除", "success");
-            nextTickCheck();
+            showDecryptionResultWindow("📡 符文殘響解密比對中", `目標解密節點：${targetId}`);
+            const fullActionText = `【【核心指令】發起圖書館禁書區符文代碼逆向工程解密】\n- 標的符文ID：${targetId}\n- 調查解密對抗手段：${guessText}`;
+            idEl.value = ""; guessEl.value = "";
+            sendPromptToAI(fullActionText);
         }
 
-        // 核心新增功能：【麻瓜出身隱藏特權行為】
-        function runMuggleTraitAction() {
-            engineState.stats.galleon += 40;
-            engineState.skills.transfiguration += 10;
-            writeToStream("【麻瓜思維．非傳統逆向工程】", "你完全摒棄了傳統魔法理論的死板束縛，利用非傳統邏輯與槓桿機關，瞬間解鎖了煉金矩陣的暗格密道！", "player");
-            triggerToast("✨ 特權通關成功：資產+40 ｜ 變形學大提升", "success");
-            nextTickCheck();
+        function toggleSection(id) {
+            const content = document.getElementById(id);
+            if (content.classList.contains('folded')) content.classList.remove('folded');
+            else content.classList.add('folded');
         }
-
-        // 時鐘脈衝自轉清算
-        function nextTickCheck() {
-            if(engineState.stats.health <= 0 || engineState.stats.mood <= 0) {
-                engineState.scenePointer = "died";
-            } else {
-                engineState.timeline.week++;
-            }
-            advanceEngineScene();
+        function closeDecryptResultModal() { document.getElementById('decrypt-result-modal').classList.add('hidden'); }
+        function showDecryptionResultWindow(title, message) {
+            document.getElementById('decrypt-result-title').innerText = title;
+            document.getElementById('decrypt-result-message').innerHTML = message;
+            document.getElementById('decrypt-result-modal').classList.remove('hidden');
         }
-
-        // 自由輸入 NLP 內核 (禁咒防禦依舊保留)
-        function submitCustomNLP() {
-            let inputBar = document.getElementById('custom-nlp-input');
-            let text = inputBar.value.trim();
-            if(!text) return;
-
-            writeToStream("【自訂巫師決策】", `“${text}”`, "player");
-
-            if(text.includes("阿哇呾喀呾啦") || text.includes("索命咒")) {
-                engineState.scenePointer = "died";
-                writeToStream("【部傲羅逮捕線】", "警告！全校監視網偵測到不赦禁咒！你已被傲羅當街拿下，存檔快照宣告凍結，流放至阿茲卡班審判艙！", "system");
-                triggerToast("💀 觸發終極社會性死亡", "danger");
-            } else {
-                engineState.stats.mood -= 5;
-                writeToStream("【自轉時鐘】", "去結構化行為已被 DM 內核吞噬消化，時間流逝。", "system");
-            }
-
-            inputBar.value = "";
-            nextTickCheck();
-        }
-
-        // 本地持久層控制協議 (LocalStorage)
-        function saveSnapshot() {
-            localStorage.setItem('hogwarts_dynamic_v3', JSON.stringify(engineState));
-            triggerToast("💾 全狀態數據快照已印入本地持久空間！", "success");
-        }
-
-        function loadSnapshot() {
-            let data = localStorage.getItem('hogwarts_dynamic_v3');
-            if(data) {
-                engineState = JSON.parse(data);
-                document.getElementById('log-stream').innerHTML = "";
-                writeToStream("【時空回溯】", "快照傳遞協定成功覆寫當前數據，防止屬性漂移。", "system");
-                updateHUD();
-                advanceEngineScene();
-                triggerToast("📜 存檔名軌載入成功！", "success");
-            } else {
-                triggerToast("⚠️ 未偵測到有效的魔法存檔。", "danger");
-            }
+        function setLoading(loading) {
+            const indicator = document.getElementById('loading-indicator');
+            if (loading) indicator.classList.remove('hidden'); else indicator.classList.add('hidden');
         }
     </script>
 </body>
