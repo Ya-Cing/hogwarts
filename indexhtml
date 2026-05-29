@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霍格華茲魔法學院人生模擬器 V3.0</title>
+    <style>
+        :root {
+            --bg-color: #0d0d13;
+            --panel-bg: #161622;
+            --accent-gold: #d4af37;
+            --accent-purple: #8a2be2;
+            --accent-blue: #00bfff;
+            --accent-red: #ff4500;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-glow: rgba(212, 175, 55, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 絢麗魔法開頭動畫 */
+        #intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #1a0f30 0%, #05030a 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .magic-circle {
+            width: 200px;
+            height: 200px;
+            border: 2px dashed var(--accent-gold);
+            border-radius: 50%;
+            position: relative;
+            animation: rotateCircle 20s linear infinite;
+            box-shadow: 0 0 30px var(--border-glow);
+        }
+
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 1px solid var(--accent-purple);
+            border-radius: 50%;
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        .magic-rune {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            background: linear-gradient(45deg, transparent 45%, var(--accent-gold) 49%, var(--accent-gold) 51%, transparent 55%);
+        }
+
+        .magic-title {
+            margin-top: 40px;
+            font-size: 2rem;
+            color: var(--accent-gold);
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 2s forwards 0.5s;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .enter-btn {
+            margin-top: 30px;
+            padding: 12px 35px;
+            background: transparent;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            cursor: pointer;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            opacity: 0;
+            animation: fadeInUp 2s forwards 1.5s;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+        }
+
+        .enter-btn:hover {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+
+        /* 遊戲核心佈局 */
+        #game-container {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            grid-template-columns: 320px 1fr;
+        }
+
+        @media (max-width: 768px) {
+            #game-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        /* 左側/頂部 數據面板 */
+        #sidebar {
+            background-color: var(--panel-bg);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                padding: 10px;
+                max-height: 200px;
+            }
+        }
+
+        .hud-section {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .hud-title {
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding-bottom: 4px;
+        }
+
+        .hud-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .tag-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            background: var(--accent-purple);
+            color: #fff;
+        }
+
+        /* 右側故事主視窗 */
+        #main-window {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: radial-gradient(circle at top, #13131f 0%, #0d0d13 100%);
+        }
+
+        #story-display {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            line-height: 1.8;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 768px) {
+            #story-display {
+                padding: 15px;
+                font-size: 0.95rem;
+            }
+        }
+
+        .system-prompt {
+            color: var(--accent-blue);
+            background: rgba(0, 191, 255, 0.05);
+            padding: 10px;
+            border-left: 3px solid var(--accent-blue);
+            font-size: 0.9rem;
+        }
+
+        .spell-highlight {
+            color: #fff;
+            background: linear-gradient(120deg, var(--accent-purple) 0%, transparent 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #fff;
+        }
+
+        .unforgivable-spell {
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            font-weight: bold;
+            animation: shake 0.5s infinite;
+        }
+
+        /* 互動控制區 */
+        #controls {
+            padding: 20px;
+            background: rgba(22, 22, 34, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .opt-btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-main);
+            padding: 14px;
+            text-align: left;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .opt-btn:hover {
+            border-color: var(--accent-gold);
+            background: rgba(212, 175, 55, 0.05);
+            transform: translateX(5px);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .custom-input {
+            flex-grow: 1;
+            background: #0d0d13;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .submit-btn {
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .sys-actions {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .sys-btn {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .sys-btn:hover {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
+
+        /* 動畫特徵定義 */
+        @keyframes rotateCircle { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(0px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(2px, 1px) rotate(-1deg); }
+            85% { transform: translate(-1px, -1px) rotate(1deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="intro-screen">
+        <div class="magic-circle">
+            <div class="magic-rune"></div>
+        </div>
+        <div class="magic-title">霍格華茲魔法學院人生模擬器<br><span style="font-size:1rem; color:var(--text-muted);">文字 RPG 終極主宰系統 V3.0</span></div>
+        <button class="enter-btn" onclick="initGame()">推開魔法大門</button>
+    </div>
+
+    <div id="game-container">
+        <div id="sidebar">
+            <div class="hud-section">
+                <div class="hud-title">【巫師名冊】</div>
+                <div id="hud-profile" style="font-size:0.85rem; line-height:1.5;">載入中...</div>
+            </div>
+            <div class="hud-section">
+                <div class="hud-title">【生理精神狀態】</div>
+                <div class="hud-grid">
+                    <div>心情: <span id="val-mood">100</span>/100</div>
+                    <div>健康: <span id="val-health">100</span>/100</div>
+                </div>
+                <div style="margin-top:5px;">狀態: <span id="val-status" class="tag-badge">正常</span></div>
+            </div>
+            <div class="hud-section">
+                <div class="hud-title">【社會與巫師資產】</div>
+                <div class="hud-grid">
+                    <div>加隆: <span id="val-galleon">0</span> G</div>
+                    <div>魅力: <span id="val-charisma">50</span></div>
+                    <div>談吐: <span id="val-speech">50</span></div>
+                    <div>知名度: <span id="val-renown">0</span></div>
+                </div>
+            </div>
+            <div class="hud-section">
+                <div class="hud-title">【學院與政商傾向】</div>
+                <div style="font-size:0.85rem; line-height:1.6;">
+                    <div>學院聲望: <span id="val-house-rep">0</span></div>
+                    <div>教授總評: <span id="val-prof-eval">0</span></div>
+                    <div>黑魔法傾向: <span id="val-dark-arts">0</span></div>
+                </div>
+            </div>
+            <div class="hud-section">
+                <div class="hud-title">【魔杖與命定天賦】</div>
+                <div id="hud-wand" style="font-size:0.8rem; line-height:1.4; color:var(--text-muted);">未分配</div>
+            </div>
+            <div class="hud-section" id="focus-npc-section" style="display:none;">
+                <div class="hud-title">【當前聚焦 NPC 關係】</div>
+                <div id="hud-npc-list" style="font-size:0.8rem; line-height:1.4;"></div>
+            </div>
+        </div>
+
+        <div id="main-window">
+            <div id="story-display"></div>
+            
+            <div id="controls">
+                <div class="options-container" id="options-box"></div>
+                <div class="input-group">
+                    <input type="text" id="custom-action" class="custom-input" placeholder="或輸入你的自訂巫師言行（支援 NLP 核心判定機制）...">
+                    <button class="submit-btn" onclick="handleCustomInput()">執行</button>
+                </div>
+                <div class="sys-actions">
+                    <button class="sys-btn" onclick="saveGame()">⚡ 保存當前進度 (Save)</button>
+                    <button class="sys-btn" onclick="loadGame()">📜 讀取歷史存檔 (Load)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局資料庫狀態協議快照 (State Snapshot)
+        let gameState = {
+            player: {
+                name: "林恩·沃克",
+                engName: "Lynn Walker",
+                gender: "神祕",
+                bloodline: "未定",
+                house: "未定",
+                age: 11,
+                year: "一年級（入學前）"
+            },
+            stats: {
+                mood: 100, maxMood: 100,
+                health: 100, maxHealth: 100,
+                galleon: 0, charisma: 50, speech: 50,
+                houseRep: 0, profEval: 0, renown: 0, darkArts: 0
+            },
+            statusTags: ["正常"],
+            wand: { wood: "未定", core: "未定", quality: "普通", bonus: 0 },
+            talent: "未解鎖",
+            currentStep: "creation_bloodline",
+            npcRelations: {
+                "加里克·奧利凡德": { favor: 0, alert: 10, jealousy: 0, tags: ["魔杖店主"] },
+                "塞浦路斯教授": { favor: 0, alert: 30, jealousy: 0, tags: ["魔藥學教授", "純血至上"] },
+                "奧蕾莉亞·凡斯校長": { favor: 5, alert: 20, jealousy: 0, tags: ["校長", "實用主義"] }
+            },
+            weekClock: 1
+        };
+
+        // 啟動動畫過渡
+        function initGame() {
+            document.getElementById('intro-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('intro-screen').style.display = 'none';
+                document.getElementById('game-container').style.display = 'grid';
+                renderHUD();
+                processStoryEngine();
+            }, 1500);
+        }
+
+        // 渲染 HUD 數據面板
+        function renderHUD() {
+            document.getElementById('hud-profile').innerHTML = `
+                <b>${gameState.player.name}</b> (${gameState.player.engName})<br>
+                性別: ${gameState.player.gender} ｜ 年級: ${gameState.player.year}<br>
+                血統背景: <span style="color:var(--accent-gold);">${gameState.player.bloodline}</span><br>
+                所屬學院: <span style="color:var(--accent-purple);">${gameState.player.house}</span>
+            `;
+            document.getElementById('val-mood').innerText = gameState.stats.mood;
+            document.getElementById('val-health').innerText = gameState.stats.health;
+            document.getElementById('val-status').className = "tag-badge";
+            document.getElementById('val-status').innerText = gameState.statusTags.join(', ');
+            document.getElementById('val-galleon').innerText = gameState.stats.galleon;
+            document.getElementById('val-charisma').innerText = gameState.stats.charisma;
+            document.getElementById('val-speech').innerText = gameState.stats.speech;
+            document.getElementById('val-renown').innerText = gameState.stats.renown;
+            document.getElementById('val-house-rep').innerText = gameState.stats.houseRep;
+            document.getElementById('val-prof-eval').innerText = gameState.stats.profEval;
+            document.getElementById('val-dark-arts').innerText = gameState.stats.darkArts;
+            
+            document.getElementById('hud-wand').innerHTML = `
+                晶體: ${gameState.wand.wood}配${gameState.wand.core}<br>
+                品質: ${gameState.wand.quality} (+${gameState.wand.bonus}%)<br>
+                核心特質: <span style="color:var(--accent-blue);">${gameState.talent}</span>
+            `;
+
+            // NPC 關係動態渲染
+            let npcListHTML = "";
+            let hasFocusNPC = false;
+            for (let npc in gameState.npcRelations) {
+                if (gameState.npcRelations[npc].favor !== 0 || gameState.npcRelations[npc].alert !== 10) {
+                    hasFocusNPC = true;
+                    npcListHTML += `<div><b>${npc}</b>: 好感 ${gameState.npcRelations[npc].favor} ｜ 戒備 ${gameState.npcRelations[npc].alert}</div>`;
+                }
+            }
+            if (hasFocusNPC) {
+                document.getElementById('focus-npc-section').style.display = "block";
+                document.getElementById('hud-npc-list').innerHTML = npcListHTML;
+            } else {
+                document.getElementById('focus-npc-section').style.display = "none";
+            }
+        }
+
+        // 儲存進度功能
+        function saveGame() {
+            localStorage.setItem('hogwarts_v3_save', JSON.stringify(gameState));
+            alert('[系統提示] 金色魔力刻印成功！當前數據快照已存入本地持久層空間。');
+        }
+
+        // 讀取進度功能
+        function loadGame() {
+            let saved = localStorage.getItem('hogwarts_v3_save');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                renderHUD();
+                processStoryEngine();
+                alert('[系統提示] 時光逆流成功！已完整恢復歷史快照數據。');
+            } else {
+                alert('[系統提示] 未偵測到有效的魔法刻印存檔。');
+            }
+        }
+
+        // 核心文字 DM 演繹與分歧調度引擎
+        function appendStory(text) {
+            let display = document.getElementById('story-display');
+            display.innerHTML = text;
+            display.scrollTop = display.scrollHeight;
+        }
+
+        function processStoryEngine() {
+            let html = "";
+            let options = [];
+            let box = document.getElementById('options-box');
+            box.innerHTML = "";
+
+            switch (gameState.currentStep) {
+                case "creation_bloodline":
+                    html = `
+                        <div class="system-prompt">[核心 DM 運作協議啟動：請選擇你的初始血統起源]</div>
+                        <p>在漫天不散的倫敦濃霧中，破釜酒吧那扇斑駁的黑木門散發著酸澀的麥芽酒與陳舊魔藥的混雜氣味。這不是你所熟知的那個充滿童話色彩的魔法世界，而是一個精緻、冷酷、階級分明且暗流湧動的權力熔爐。</p>
+                        <p>牆壁上的黃銅壁燈在霧氣中暈染出黏稠的光圈。在這個平行世界線裡，魔法部的權力被古老的「三大世家」（卡文迪許、華勒斯、蒙特羅斯）牢牢把持。而你，正站在命運的十字路口，你的血統將決定你開局的經濟資本與人際防線。</p>
+                    `;
+                    options = [
+                        { text: "👑 純血家族 (Pureblood) —— 初始 500 加隆，魅力特權，自帶世家政治包袱", action: () => chooseBloodline("純血家族", 500, 10, 5) },
+                        { text: "💎 混血家庭 (Mixed-blood) —— 初始 150 加隆，社交彈性高，無血統世家包袱", action: () => chooseBloodline("混血家庭", 150, 0, 0) },
+                        { text: "⚜️ 麻瓜出身 (Muggle-born) —— 初始 30 加隆，極度匱乏開局，解鎖獨特「麻瓜思維」邏輯選項", action: () => chooseBloodline("麻瓜出身", 30, -5, 10) }
+                    ];
+                    break;
+
+                case "ollivander_wand":
+                    html = `
+                        <div class="system-prompt">[序章敘事：霧鎖斜角巷 ── 奧利凡德魔杖篩選]</div>
+                        <p>你推開了奧利凡德魔杖店那扇古舊的門。店內狹窄陰暗，從地板一直堆到天花板的幾千個狹長盒子散發著厚重的灰塵與微弱的魔力波動。</p>
+                        <p>一位面容清癯、眼球呈現淡淡銀白色的老人從密密麻麻的貨架深處緩緩滑了出來——那是<b>加里克·奧利凡德</b>。老人的大腦早已調用了後端載入的角色卡快照。「魔杖選擇巫師，這是我們這一行永恆不變的真理。」老人猛地抽出一隻覆滿灰塵的黑色長盒，啪一聲扣在櫃檯上。</p>
+                        <p>「來吧，孩子，伸出你的右手，試著去感知它的殘響。」</p>
+                    `;
+                    options = [
+                        { text: "【選項 A】穩健感知：用指尖溫和地觸碰杖柄，尋求穩定的魔力對接。", action: () => selectWand("獨角獸毛", "良好", 5) },
+                        { text: "【選項 B】激進釋放：直接緊握魔杖，將體內沉睡的魔力進行排山倒海式的灌注！", action: () => selectWand("龍的心弦", "優秀", 10) },
+                        { text: "【選項 C】靈魂共鳴：閉上眼，不看外表，僅憑靈魂深處的宏大殘響去呼喚命定之物。", action: () => selectWand("鳳凰羽毛", "傳奇", 25) }
+                    ];
+                    break;
+
+                case "sorting_hat":
+                    html = `
+                        <div class="system-prompt">[第一學年核心節點：大禮堂分院帽儀式]</div>
+                        <p>霍格華茲大禮堂。無數根懸浮在半空中的蠟燭將金色的光芒灑在四張巨大的長桌上。上百名學長姐正用審視、期盼或冷漠的目光注視著你們。禮堂最前方，奧蕾莉亞·凡斯校長神色嚴厲地站立在貓頭鷹講台後。</p>
+                        <p>你緩步走上前，冰冷而滑稽的分院帽落入你的頭頂。一個沙啞的呢喃聲直接在你的大腦深處炸響：</p>
+                        <p>「哦……有意思。我看到了野心，也看到了面對未知的勇氣……血管中還隱藏著奇特的本質。孩子，你想去哪裡？」</p>
+                    `;
+                    options = [
+                        { text: "【接受命定推薦】任由分院帽剖析靈魂，順應本風（提升學院聲望與心情）", action: () => completeSorting("雷文克勞", 15, 10) },
+                        { text: "【自由意志之違背】強行在大脑中向分院帽下達指令，去往最具野心的「史萊哲林」", action: () => completeSorting("史萊哲林", -10, 5, 5) },
+                        { text: "【展現極端勇氣】對分院帽的低語進行心靈對抗，高喊「葛來分多」！", action: () => completeSorting("葛來分多", 15, -5) }
+                    ];
+                    break;
+
+                case "game_loop":
+                    html = `
+                        <div class="system-prompt">[世界自轉時鐘 Tick 第 ${gameState.weekClock} 週循環 ── 日間常態課程與行動選擇]</div>
+                        <p>霍格華茲的時鐘脈衝開始走動。黑魔法防禦術課堂上搖曳著漆黑的蠟燭，地窖教室裡塞浦路斯教授正用陰冷多疑的目光掃視著你長袍上的徽章。純血繼承人們在走廊低聲密謀，而禁忌森林的邊緣正散發著誘人的危險氣息。</p>
+                        <p>你當前處於<b>【${gameState.statusTags[0]}】</b>狀態，請分配本週的核心時段行為：</p>
+                    `;
+                    options = [
+                        { text: "🧪 【日間課程】參與塞浦路斯教授的魔藥學高難度實作（心情-12，有概率提升魔藥熟練度與評價）", action: () => executeLoopAction("potions") },
+                        { text: "🏰 【自由時間】前往決鬥俱樂部，隨機抽取一名具名 NPC 進行魔法實力對抗（健康-10）", action: () => executeLoopAction("duel") },
+                        { text: "🌲 【夜間行動】潛入極高肉體風險的「禁忌森林節點」採集稀有魔藥原料", action: () => executeLoopAction("forest") }
+                    ];
+                    break;
+
+                case "game_over":
+                    html = `
+                        <div class="system-prompt" style="background:rgba(255,0,0,0.1); border-color:var(--accent-red);">[終極主宰協議：遊戲命運終結]</div>
+                        <p>由於你的關鍵數值歸零或觸發了社會性毀滅判定，模擬器後端資料庫已即時鎖定。</p>
+                        <p style="color:var(--accent-red); font-size:1.2rem; font-weight:bold;">當前結局：因意志或命運的崩塌，你未能完成七年級畢業。請讀取舊存檔或重整網頁開啟新人生。</p>
+                    `;
+                    break;
+            }
+
+            appendStory(html);
+            options.forEach(opt => {
+                let btn = document.createElement('button');
+                btn.className = "opt-btn";
+                btn.innerText = opt.text;
+                btn.onclick = () => { opt.action(); };
+                box.appendChild(btn);
+            });
+        }
+
+        // 行為邏輯封裝
+        function chooseBloodline(type, money, charismaMod, speechMod) {
+            gameState.player.bloodline = type;
+            gameState.stats.galleon = money;
+            gameState.stats.charisma += charismaMod;
+            gameState.stats.speech += speechMod;
+            gameState.currentStep = "ollivander_wand";
+            renderHUD();
+            processStoryEngine();
+        }
+
+        function selectWand(core, quality, bonus) {
+            gameState.wand.wood = "黑胡桃木";
+            gameState.wand.core = core;
+            gameState.wand.quality = quality;
+            gameState.wand.bonus = bonus;
+            
+            // 語意映射引擎賦予特質
+            if(core === "龍的心弦") gameState.talent = "無杖魔法直覺";
+            if(core === "獨角獸毛") gameState.talent = "鎖心術天才";
+            if(core === "鳳凰羽毛") gameState.talent = "天生預言家";
+
+            gameState.currentStep = "sorting_hat";
+            renderHUD();
+            processStoryEngine();
+        }
+
+        function completeSorting(house, rep, moodMod, darkMod = 0) {
+            gameState.player.house = house;
+            gameState.player.year = "一年級第一學期";
+            gameState.stats.houseRep = rep;
+            gameState.stats.mood += moodMod;
+            gameState.stats.darkArts += darkMod;
+            gameState.currentStep = "game_loop";
+            renderHUD();
+            processStoryEngine();
+        }
+
+        function executeLoopAction(type) {
+            // 1D100 百面骰隱性判定
+            let roll = Math.floor(Math.random() * 100) + 1;
+            let successRate = 60 + gameState.wand.bonus;
+            let htmlResult = "";
+
+            if (type === "potions") {
+                gameState.stats.mood -= 12;
+                if (roll <= successRate) {
+                    gameState.stats.profEval += 5;
+                    gameState.stats.galleon += 10;
+                    htmlResult = `<p>[判定成功] 你在魔藥學課堂成功熬製了完美的縮小劑！塞浦路斯教授嘴角抽動，極不情願地給予了好評。獲得 <span class="spell-highlight">教授評價+5 ｜ 10 加隆</span></p>`;
+                } else {
+                    gameState.stats.profEval -= 5;
+                    htmlResult = `<p>[判定失敗] 大釜發生了大爆炸！你被塞浦路斯教授罰洗大釜一整週。扣除 <span style="color:var(--accent-red);">教授評價-5</span></p>`;
+                }
+            } else if (type === "duel") {
+                gameState.stats.health -= 10;
+                if (roll <= successRate) {
+                    gameState.stats.renown += 8;
+                    gameState.stats.houseRep += 10;
+                    gameState.npcRelations["塞浦路斯教授"].favor -= 5; // 引起純血派警惕
+                    htmlResult = `<p>[判定成功] 你在決鬥俱樂部以流暢的 <span class="spell-highlight">【去去，武器走！】</span> 擊飛了對手的魔杖！全場歡呼。獲得 <span style="color:var(--accent-gold);">校園知名度+8 ｜ 學院聲望+10</span></p>`;
+                } else {
+                    gameState.stats.mood -= 10;
+                    htmlResult = `<p>[判定失敗] 你被對手的軟腿咒擊中，狼狽地摔倒在決鬥台上。扣除 <span style="color:var(--accent-red);">心情-10</span></p>`;
+                }
+            } else if (type === "forest") {
+                if (roll < 40) { // 模擬 40% 高肉體風險
+                    gameState.stats.health -= 35;
+                    gameState.statusTags = ["受傷"];
+                    htmlResult = `<p>[判定大失敗] 你在禁忌森林深處遭遇了狂暴的八眼巨蛛襲擊！雖然勉強逃脫，但肉體受到重創！觸發負面狀態 <span style="color:var(--accent-red);">[受傷] ｜ 健康-35</span></p>`;
+                } else {
+                    gameState.stats.galleon += 60;
+                    gameState.stats.darkArts += 5;
+                    htmlResult = `<p>[判定大成功] 藉由天賦的指引，你成功繞過了巡邏的管理員與魔法生物，採集到了極其珍稀的鳳凰羽毛殘頁與魔藥原料！黑市售出獲利 <span style="color:var(--accent-gold);">60 加隆 ｜ 黑魔法傾向+5</span></p>`;
+                }
+            }
+
+            // 崩塌防禦防線與存活檢查
+            if (gameState.stats.health <= 0 || gameState.stats.mood <= 0) {
+                gameState.currentStep = "game_over";
+            } else {
+                gameState.weekClock++;
+            }
+
+            renderHUD();
+            processStoryEngine();
+            document.getElementById('story-display').innerHTML += htmlResult;
+        }
+
+        // 處理自訂輸入 (NLP 核心意圖提取)
+        function handleCustomInput() {
+            let input = document.getElementById('custom-action').value.trim();
+            if (!input) return;
+
+            let htmlResult = `<p style="color:var(--accent-gold);">[自訂巫師言行解析中...] “${input}”</p>`;
+            
+            // 意圖模糊比對與懲罰規則
+            if (input.includes("阿哇呾喀呾啦") || input.includes("索命咒")) {
+                gameState.currentStep = "game_over";
+                htmlResult += `<p class="unforgivable-spell">[系統重大變動] 你竟然試圖施展不可饒恕的 Tier 3 禁忌黑魔法【阿哇呾喀呾啦】！魔法部隱蔽傲羅突擊檢查線被即時激活，你被當場逮捕，強制導向【阿茲卡班無期徒刑結局】！</p>`;
+            } else if (input.includes("舉報") || input.includes("告密")) {
+                gameState.stats.houseRep -= 15;
+                gameState.stats.profEval += 10;
+                htmlResult += `<p>[意圖匹配：陣營出賣] 你暗中向教授告密了具名同學夜遊的蹤跡。教授非常滿意，但學院內部的同學們開始集體孤立你！獲得 <span style="color:var(--accent-blue);">教授評價+10</span> ｜ 扣除 <span style="color:var(--accent-red);">學院聲望-15</span></p>`;
+            } else {
+                // 通用合理性骰點
+                gameState.stats.mood -= 5;
+                htmlResult += `<p>[意圖匹配：自主研發行動] 你的策略已被 DM 內核捕獲。由於你精妙的拉扯，消耗 5 點心情，成功在霍格華茲的複雜格局中為自己爭取到了微幅的優勢！</p>`;
+            }
+
+            document.getElementById('custom-action').value = "";
+            renderHUD();
+            processStoryEngine();
+            document.getElementById('story-display').innerHTML += htmlResult;
+        }
+    </script>
+</body>
+</html>
