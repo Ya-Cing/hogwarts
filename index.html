@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>霍格華茲魔法學院人生模擬器 - 動態因果版</title>
+    <title>霍格華茲魔法學院人生模擬器 - 動態重構版</title>
     <style>
         :root {
             --bg-main: #09090d;
             --panel-bg: #11111a;
-            --panel-brd: #222235;
+            --panel-brd: #1d1d2b;
             --accent-gold: #d4af37;
             --accent-purple: #9b5de5;
             --accent-blue: #00bfff;
@@ -36,11 +36,8 @@
         .btn-sys:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
 
         #main-layout { flex-grow: 1; display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 50px); overflow: hidden; }
-        @media (max-width: 768px) {
-            #main-layout { grid-template-columns: 1fr; grid-template-rows: 160px 1fr; }
-        }
+        @media (max-width: 768px) { #main-layout { grid-template-columns: 1fr; grid-template-rows: 180px 1fr; } }
 
-        /* 側邊 HUD 面板 */
         #sidebar { background-color: var(--panel-bg); border-right: 1px solid var(--panel-brd); display: flex; flex-direction: column; overflow: hidden; }
         .tab-headers { display: flex; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--panel-brd); }
         .tab-btn { flex: 1; padding: 10px 5px; background: transparent; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-align: center; font-weight: bold; }
@@ -49,37 +46,48 @@
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
 
-        /* 主故事滾動流 */
-        #content-window { display: flex; flex-direction: column; height: 100%; background: radial-gradient(circle at top, #141422 0%, #09090d 100%); overflow: hidden; }
+        #content-window { display: flex; flex-direction: column; height: 100%; background: radial-gradient(circle at top, #131320 0%, #09090d 100%); overflow: hidden; }
         #log-stream { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         
         .log-row { display: flex; flex-direction: column; animation: fadeIn 0.3s ease forwards; }
         .log-sender { font-size: 0.75rem; color: var(--accent-gold); margin-bottom: 3px; font-weight: bold; }
-        .log-bubble { background: rgba(255,255,255,0.03); border: 1px solid var(--panel-brd); padding: 12px 16px; border-radius: 4px; line-height: 1.7; max-width: 85%; font-size: 0.95rem; }
+        .log-bubble { background: rgba(255,255,255,0.02); border: 1px solid var(--panel-brd); padding: 12px 16px; border-radius: 4px; line-height: 1.7; max-width: 85%; font-size: 0.95rem; }
         
-        .log-row.system .log-bubble { border-left: 3px solid var(--accent-blue); background: rgba(0, 191, 255, 0.02); color: #bde0fe; font-size: 0.85rem; }
-        .log-row.npc .log-bubble { border-left: 3px solid var(--accent-purple); background: rgba(155, 93, 229, 0.02); font-style: italic; }
-        .log-row.player .log-bubble { border-left: 3px solid var(--accent-gold); background: rgba(214, 175, 55, 0.02); align-self: flex-start; }
+        .log-row.system .log-bubble { border-left: 3px solid var(--accent-blue); background: rgba(0, 191, 255, 0.01); color: #bde0fe; font-size: 0.85rem; }
+        .log-row.npc .log-bubble { border-left: 3px solid var(--accent-purple); background: rgba(155, 93, 229, 0.01); font-style: italic; }
+        .log-row.player .log-bubble { border-left: 3px solid var(--accent-gold); background: rgba(214, 175, 55, 0.01); align-self: flex-start; }
 
-        /* 底端按鈕控制台 */
-        #interactive-panel { padding: 20px; background: rgba(17, 17, 26, 0.98); border-top: 1px solid var(--panel-brd); display: flex; flex-direction: column; gap: 12px; }
+        #interactive-panel { padding: 20px; background: rgba(15, 15, 24, 0.95); border-top: 1px solid var(--panel-brd); display: flex; flex-direction: column; gap: 12px; }
         .options-group { display: flex; flex-direction: column; gap: 8px; }
+        
+        /* 動態按鈕樣式矩陣 */
         .btn-option { background: rgba(255,255,255,0.02); border: 1px solid var(--panel-brd); color: var(--text-main); padding: 12px 15px; text-align: left; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
-        .btn-option:hover:not(:disabled) { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.05); transform: translateX(3px); }
-        .btn-option:disabled { opacity: 0.3; cursor: not-allowed; background: rgba(0,0,0,0.2); color: var(--text-muted); }
-        .btn-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-option:hover:not(:disabled) { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.04); transform: translateX(3px); }
+        .btn-option:disabled { opacity: 0.3; cursor: not-allowed; background: rgba(0,0,0,0.4); border-color: #2c2c3e; color: var(--text-muted); }
+        
+        /* 數值恢復專用綠色高亮按鈕 */
+        .btn-option.recovery-mode { border-left: 4px solid var(--accent-green); background: rgba(46, 213, 115, 0.02); }
+        .btn-option.recovery-mode:hover:not(:disabled) { border-color: var(--accent-green); background: rgba(46, 213, 115, 0.06); }
+        
+        /* 隱藏特權解鎖按鈕 */
+        .btn-option.trait-unlocked { border-left: 4px solid var(--accent-blue); background: rgba(0, 191, 255, 0.03); }
+
+        .indicator-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
+        .badge-rec { background: rgba(46, 213, 115, 0.2); color: var(--accent-green); }
+        .badge-danger { background: rgba(255, 71, 87, 0.2); color: var(--accent-red); }
+        .badge-lock { background: rgba(116, 125, 140, 0.2); color: var(--text-muted); }
 
         .input-bar { display: flex; gap: 8px; }
         .txt-custom { flex-grow: 1; background: #000; border: 1px solid var(--panel-brd); color: #fff; padding: 10px; border-radius: 4px; font-size: 0.9rem; }
         .btn-exec { background: var(--accent-purple); color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         #toast-container { position: fixed; top: 60px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
-        .toast { background: #1c1c2d; border-left: 4px solid var(--accent-gold); color: #fff; padding: 12px 20px; border-radius: 4px; font-size: 0.85rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s ease, fadeOut 0.3s ease forwards 3.5s; }
+        .toast { background: #1a1a26; border-left: 4px solid var(--accent-gold); color: #fff; padding: 12px 20px; border-radius: 4px; font-size: 0.85rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s ease, fadeOut 0.3s ease forwards 3.5s; }
         .toast.success { border-left-color: var(--accent-green); }
         .toast.danger { border-left-color: var(--accent-red); }
 
         .hud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .hud-item { background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.01); }
+        .hud-item { background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); }
         .hud-label { font-size: 0.75rem; color: var(--text-muted); display: block; }
         .hud-val { font-size: 0.9rem; font-weight: bold; color: var(--text-main); }
         
@@ -90,10 +98,9 @@
 </head>
 <body>
 
-    <!-- 頂部全域狀態欄 -->
     <header>
         <div class="logo-area">🔮 HOGWARTS ENGINE CORE V3.0</div>
-        <div id="timeline-indicator" style="font-size:0.85rem; color:var(--accent-gold);">加載世界線時鐘...</div>
+        <div id="timeline-indicator" style="font-size:0.85rem; color:var(--accent-gold);">時鐘脈衝同步中...</div>
         <div class="sys-ops">
             <button class="btn-sys" onclick="saveSnapshot()">⚡ 覆寫快照</button>
             <button class="btn-sys" onclick="loadSnapshot()">📜 讀取存檔</button>
@@ -101,58 +108,52 @@
     </header>
 
     <div id="main-layout">
-        <!-- 左側面板：數據分頁控制台 -->
         <div id="sidebar">
             <div class="tab-headers">
-                <button class="tab-btn active" onclick="switchTab('tab-status')">巫師狀態</button>
+                <button class="tab-btn active" onclick="switchTab('tab-status')">巫師特質</button>
                 <button class="tab-btn" onclick="switchTab('tab-npc')">人際網絡</button>
                 <button class="tab-btn" onclick="switchTab('tab-spells')">魔法書庫</button>
                 <button class="tab-btn" onclick="switchTab('tab-bag')">行李背包</button>
             </div>
             
             <div class="tab-content-wrapper">
-                <!-- Tab 1: 生理精神狀態 -->
                 <div id="tab-status" class="tab-pane active">
                     <div class="hud-grid">
                         <div class="hud-item"><span class="hud-label">中文姓名</span><span class="hud-val" id="hud-name">林恩·沃克</span></div>
-                        <div class="hud-item"><span class="hud-label">所屬分院</span><span class="hud-val" id="hud-house" style="color:var(--accent-gold);">未定</span></div>
-                        <div class="hud-item"><span class="hud-label">肉體健康</span><span class="hud-val" id="hud-health">100/100</span></div>
+                        <div class="hud-item"><span class="hud-label">學院院風</span><span class="hud-val" id="hud-house" style="color:var(--accent-gold);">未定</span></div>
+                        <div class="hud-item"><span class="hud-label">生理健康</span><span class="hud-val" id="hud-health">100/100</span></div>
                         <div class="hud-item"><span class="hud-label">精神心情</span><span class="hud-val" id="hud-mood">100/100</span></div>
-                        <div class="hud-item"><span class="hud-label">魅力權重</span><span class="hud-val" id="hud-charisma">50</span></div>
-                        <div class="hud-item"><span class="hud-label">談吐防線</span><span class="hud-val" id="hud-speech">50</span></div>
+                        <div class="hud-item"><span class="hud-label">視覺魅力</span><span class="hud-val" id="hud-charisma">50</span></div>
+                        <div class="hud-item"><span class="hud-label">語言談吐</span><span class="hud-val" id="hud-speech">50</span></div>
                     </div>
-                    <p style="color:var(--text-muted); font-size:0.75rem;">目前狀態標籤：<span id="hud-tags" style="color:#fff; background:var(--accent-purple); padding:2px 6px; border-radius:3px;">正常</span></p>
+                    <p style="color:var(--text-muted); font-size:0.75rem;">生理狀態標籤：<span id="hud-tags" style="color:#fff; background:var(--accent-purple); padding:1px 4px; border-radius:2px;">正常</span></p>
                 </div>
-                <!-- Tab 2: 具名 NPC 持久網絡 -->
                 <div id="tab-npc" class="tab-pane">
                     <div id="npc-list-container" style="display:flex; flex-direction:column; gap:8px;"></div>
                 </div>
-                <!-- Tab 3: 學術熟練度 -->
                 <div id="tab-spells" class="tab-pane">
                     <div class="hud-grid">
+                        <div class="hud-item"><span class="hud-label">變形學熟練度</span><span class="hud-val" id="spell-trans">10%</span></div>
                         <div class="hud-item"><span class="hud-label">魔藥學熟練度</span><span class="hud-val" id="spell-potions">10%</span></div>
                         <div class="hud-item"><span class="hud-label">黑魔法防禦術</span><span class="hud-val" id="spell-dada">10%</span></div>
                         <div class="hud-item"><span class="hud-label">黑魔法傾向</span><span class="hud-val" id="spell-dark" style="color:var(--accent-red);">0%</span></div>
                     </div>
                 </div>
-                <!-- Tab 4: 巫師經濟與背包 -->
                 <div id="tab-bag" class="tab-pane">
-                    <div class="hud-item" style="margin-bottom:10px;"><span class="hud-label">總加隆資產</span><span class="hud-val" id="hud-galleon" style="color:var(--accent-gold);">0 G</span></div>
-                    <p class="hud-label">長袍口袋物件：</p>
+                    <div class="hud-item" style="margin-bottom:10px;"><span class="hud-label">古靈閣常駐資產</span><span class="hud-val" id="hud-galleon" style="color:var(--accent-gold);">0 G</span></div>
+                    <p class="hud-label">持有裝備物件：</p>
                     <ul id="inventory-list" style="padding-left:15px; margin-top:5px; color:var(--text-muted);"></ul>
                 </div>
             </div>
         </div>
 
-        <!-- 右側：日誌流故事視窗 -->
         <div id="content-window">
             <div id="log-stream"></div>
             
-            <!-- 底端交互面板 -->
             <div id="interactive-panel">
                 <div class="options-group" id="options-wrapper"></div>
                 <div class="input-bar">
-                    <input type="text" id="custom-nlp-input" class="txt-custom" placeholder="鍵入去結構化言行動作（如：對周圍施放致命惡咒）...">
+                    <input type="text" id="custom-nlp-input" class="txt-custom" placeholder="不使用按鈕？在此鍵入自訂決策言行，NLP 內核將實時演繹...">
                     <button class="btn-exec" onclick="submitCustomNLP()">執行</button>
                 </div>
             </div>
@@ -162,22 +163,23 @@
     <div id="toast-container"></div>
 
     <script>
-        // 核心後端狀態引擎快照 (State Persistence)
+        // 後端資料庫全狀態快照傳遞矩陣 (Snapshot Storage Protocol)
         let engineState = {
-            player: { name: "林恩·沃克", house: "未定", bloodline: "未定", tags: ["正常"] },
-            stats: { health: 100, mood: 100, charisma: 50, speech: 50, galleon: 100 },
-            skills: { potions: 10, dada: 10, darkArts: 0 },
-            inventory: ["奧利凡德二手魔杖"],
+            player: { name: "林恩·沃克", house: "未分配", bloodline: "未定", tags: ["正常"] },
+            stats: { health: 100, mood: 100, charisma: 50, speech: 50, galleon: 0 },
+            skills: { transfiguration: 10, potions: 10, dada: 10, darkArts: 0 },
+            inventory: ["二手法術書"],
             npcs: {
+                "奧利凡德": { favor: 0, alert: 10, title: "魔杖店主" },
                 "塞浦路斯教授": { favor: 0, alert: 40, title: "魔藥學主宰" },
-                "艾莉絲": { favor: 25, alert: 5, title: "同級具名青梅竹馬" }
+                "艾莉絲": { favor: 25, alert: 5, title: "同級青梅竹馬" }
             },
-            timeline: { week: 1, phase: "起源審報" },
+            timeline: { week: 1, phase: "入學背景審查" },
             scenePointer: "creation_bloodline"
         };
 
         window.onload = function() {
-            triggerToast("🔮 霍格華茲內核主宰引擎已就緒", "success");
+            triggerToast("🔮 霍格華茲架構模擬器引擎就緒", "success");
             updateHUD();
             advanceEngineScene();
         };
@@ -189,17 +191,17 @@
             document.getElementById(tabId).classList.add('active');
         }
 
-        function triggerToast(msg, type = "normal") {
+        function triggerToast(message, type = "normal") {
             let container = document.getElementById('toast-container');
             let t = document.createElement('div');
             t.className = `toast ${type}`;
-            t.innerText = msg;
+            t.innerText = message;
             container.appendChild(t);
             setTimeout(() => { t.remove(); }, 3500);
         }
 
         function updateHUD() {
-            document.getElementById('timeline-indicator').innerText = `📅 第 ${engineState.timeline.week} 週 ｜ 當前階段：${engineState.timeline.phase}`;
+            document.getElementById('timeline-indicator').innerText = `📅 第 ${engineState.timeline.week} 週 ｜ ${engineState.timeline.phase}`;
             document.getElementById('hud-name').innerText = engineState.player.name;
             document.getElementById('hud-house').innerText = engineState.player.house;
             document.getElementById('hud-health').innerText = `${engineState.stats.health}/100`;
@@ -207,40 +209,27 @@
             document.getElementById('hud-charisma').innerText = engineState.stats.charisma;
             document.getElementById('hud-speech').innerText = engineState.stats.speech;
             document.getElementById('hud-galleon').innerText = `${engineState.stats.galleon} G`;
-            
-            // 動態同步生理標籤陣列
-            syncStatusTags();
             document.getElementById('hud-tags').innerText = engineState.player.tags.join(', ');
             
+            document.getElementById('spell-trans').innerText = `${engineState.skills.transfiguration}%`;
             document.getElementById('spell-potions').innerText = `${engineState.skills.potions}%`;
             document.getElementById('spell-dada').innerText = `${engineState.skills.dada}%`;
             document.getElementById('spell-dark').innerText = `${engineState.skills.darkArts}%`;
 
             document.getElementById('inventory-list').innerHTML = engineState.inventory.map(i => `<li>${i}</li>`).join('');
 
+            let npcBox = document.getElementById('npc-list-container');
             let npcHTML = "";
             for(let key in engineState.npcs) {
                 let n = engineState.npcs[key];
                 npcHTML += `
-                    <div style="background:rgba(255,255,255,0.02); padding:8px; border:1px solid var(--panel-brd); border-radius:4px;">
+                    <div style="background:rgba(255,255,255,0.01); padding:8px; border:1px solid var(--panel-brd); border-radius:4px;">
                         <span style="color:var(--accent-gold); font-weight:bold;">${key}</span> <span style="font-size:0.7rem; color:var(--text-muted);">(${n.title})</span><br>
                         好感度: ${n.favor} ｜ 戒備值: ${n.alert}
                     </div>
                 `;
             }
-            document.getElementById('npc-list-container').innerHTML = npcHTML;
-        }
-
-        // 動態崩塌防禦：依據數值自動更新標籤狀態
-        function syncStatusTags() {
-            let tags = [];
-            if (engineState.stats.health < 20) tags.push("虛弱");
-            else if (engineState.stats.health < 50) tags.push("受傷");
-            
-            if (engineState.stats.mood < 25) tags.push("焦慮");
-            
-            if (tags.length === 0) tags.push("正常");
-            engineState.player.tags = tags;
+            npcBox.innerHTML = npcHTML;
         }
 
         function writeToStream(sender, content, type = "system") {
@@ -252,159 +241,264 @@
             stream.scrollTop = stream.scrollHeight;
         }
 
-        // 核心調度矩陣
+        // 核心狀態機控制中樞
         function advanceEngineScene() {
             let wrapper = document.getElementById('options-wrapper');
             wrapper.innerHTML = "";
             
             if(engineState.scenePointer === "creation_bloodline") {
-                writeToStream("【系統提示】", "請申報血統以開啟霍格華茲大門。", "system");
-                createOption("👑 純血家族 (開局獲得 300 加隆)", "常規", () => {
-                    engineState.stats.galleon = 300;
-                    engineState.scenePointer = "weekly_loop";
-                    advanceEngineScene();
+                writeToStream("【系統提示】", "自轉時鐘已鎖定快照優先權。請先勾選新生的血管起源以重寫初始面板數據。", "system");
+                
+                // 常規選項
+                createDynamicOption({
+                    text: "👑 申報『純血古老世家』背景 (初始資產資產 500 加隆)",
+                    badgeText: "資產豐富", badgeClass: "badge-rec",
+                    action: () => { setupBloodline("純血家族", 500); }
                 });
-                createOption("⚜️ 麻瓜出身 (開局僅 30 加隆，匱乏挑戰開局)", "常規", () => {
-                    engineState.stats.galleon = 30;
-                    engineState.scenePointer = "weekly_loop";
-                    advanceEngineScene();
+                createDynamicOption({
+                    text: "⚜️ 申報『麻瓜出身巫師』背景 (開局解鎖獨特麻瓜思維)",
+                    badgeText: "解鎖特權", badgeClass: "badge-rec",
+                    action: () => { setupBloodline("麻瓜出身", 30); }
                 });
             } 
+            else if(engineState.scenePointer === "ollivander_shop") {
+                writeToStream("【斜角巷靜態錨點】", "奧利凡德魔杖店內幾千個盒子散發著魔力殘響。老人銀白色的雙眼凝視著你。", "system");
+                writeToStream("【加里克·奧利凡德】", "「來吧，孩子，伸出右手。有些人的血管裡流淌著雷電，有些人的靈魂裡藏著黑夜...」", "npc");
+                
+                createDynamicOption({
+                    text: "【安全穩定之盾】細緻摸索獨角獸毛木盒",
+                    badgeText: "+5% 成功率", badgeClass: "badge-rec",
+                    action: () => { chooseWand("獨角獸毛", 5); }
+                });
+                createDynamicOption({
+                    text: "【毀滅暴走之矛】瘋狂對接龍的心弦殘響",
+                    badgeText: "+10% 威力", badgeClass: "badge-danger",
+                    action: () => { chooseWand("龍的心弦", 10); }
+                });
+            }
+            else if(engineState.scenePointer === "sorting_ceremony") {
+                engineState.timeline.phase = "大禮堂分院帽儀式";
+                writeToStream("【霍格華茲大禮堂】", "破舊的分院帽落入你的頭頂，冰冷的低語在你的腦海深處猛烈炸響。", "system");
+                writeToStream("【分院帽】", "「我看見了渴望，看到了極具張力的意志。你想與哪一個世家陣營結盟？」", "npc");
+                
+                createDynamicOption({
+                    text: "【順應命定推薦】走向高傲求知的「雷文克勞」長桌",
+                    badgeText: "聲望+15", badgeClass: "badge-rec",
+                    action: () => { completeSorting("雷文克勞", 15); }
+                });
+                createDynamicOption({
+                    text: "【自由意志對抗】強行覆寫數據，踏入階級分明的「史萊哲林」",
+                    badgeText: "家族包袱", badgeClass: "badge-danger",
+                    action: () => { completeSorting("史萊哲林", -10); }
+                });
+            }
             else if(engineState.scenePointer === "weekly_loop") {
-                engineState.timeline.phase = `學期第 ${engineState.timeline.week} 週循環`;
-                writeToStream("【自轉時鐘脈衝】", `你當前的生理狀態為：<b>[${engineState.player.tags.join('/')}]</b>。長袍口袋裡剩下 ${engineState.stats.galleon} 加隆。請指定本時段的資源分配。`, "system");
+                engineState.timeline.phase = `第 ${engineState.timeline.week} 週自轉脈衝`;
+                writeToStream("【時間線指引】", "校園的齒輪向前自轉推進。請分派本週的核心行動時段。", "system");
 
-                // ============ 核心更動：依據不同狀態動態熱插拔選項 ============
-                
-                // 狀況 A：當健康度過低（虛弱標籤生效），強制封鎖高消耗冒險
-                let isWeak = engineState.player.tags.includes("虛弱");
-                
-                if (isWeak) {
-                    writeToStream("【生理警告】", "「你目前的肉體極度虛弱，長袍已被血水浸透，大腦發出強烈眩暈感！系統已封鎖高能耗校園行動。」", "system");
-                }
-
-                // 行動選項 1：日間魔藥課 (虛弱時不可點擊)
-                createOption("🧪 【日間課程】參與塞浦路斯教授的魔藥熬製實作 (消耗心情與健康)", isWeak ? "鎖定" : "常規", () => {
-                    adjustStats(-10, -15, 15);
-                    writeToStream("【玩家行動】", "你強撐著精神在魔藥課上攪動大釜，熬製出了黏稠的藥劑。", "player");
-                    triggerToast("🧪 魔藥學熟練度微幅上升", "success");
-                    nextTurn();
+                // 1. 常規日間課程選項
+                createDynamicOption({
+                    text: "🧪 【強制日間課程】參與塞浦路斯教授的魔藥學實作 (心情-12)",
+                    badgeText: "技能培訓", badgeClass: "badge-rec",
+                    action: () => { runClassAction(); }
                 });
 
-                // 行動選項 2：夜遊禁忌森林 (虛弱時不可點擊)
-                createOption("🌲 【黑夜遊蕩】潛入禁忌森林採集高危素材 (極高大失敗肉體致殘風險)", isWeak ? "鎖定" : "危險", () => {
-                    let dice = Math.floor(Math.random() * 100) + 1;
-                    if(dice <= 45) { // 45% 大失敗
-                        adjustStats(-50, -20, 0);
-                        writeToStream("【危機事件】", "「你被禁忌森林深處的奇獸藤蔓瘋狂撕咬！」肉體遭受毀滅性重創。", "system");
-                        triggerToast("🩸 遭遇奇獸伏擊！健康暴跌", "danger");
-                    } else {
-                        adjustStats(0, 0, 80);
-                        writeToStream("【玩家行動】", "你精準避開了護林員，在黑市走私獲得了 80 加隆的暴利。", "player");
-                        triggerToast("💰 黑市交易成功！加隆+80", "success");
-                    }
-                    nextTurn();
+                // 2. 社交選項 (依據資產動態重構：餘額不足則變灰鎖死)
+                let canAffordDate = engineState.stats.galleon >= 5;
+                createDynamicOption({
+                    text: canAffordDate ? "💞 【自由活動時間】邀請艾莉絲前往黑湖畔約會 (消耗 5 加隆)" : "🔒 【加隆匱乏】無法發起艾莉絲的黑湖約會行動",
+                    badgeText: canAffordDate ? "好感解鎖" : "資產不足",
+                    badgeClass: canAffordDate ? "badge-rec" : "badge-lock",
+                    disabled: !canAffordDate,
+                    action: () => { runSocialAction(); }
                 });
 
-                // ============ 動態回復指數選項區 ============
-
-                // 回復選項 1：常規安穩睡眠 (永遠開放)
-                createOption("🛌 【時段：安穩睡眠】躺回學院新宿舍進行深度冥想與休息 (心情+20，健康+25)", "回復", () => {
-                    adjustStats(25, 20, 0);
-                    writeToStream("【玩家行動】", "你拉上四柱床的帷幔，陷入了無夢的沉睡中。體內的魔力殘響開始緩慢修復。", "player");
-                    triggerToast("💚 生理肉體與精神獲得溫和修復", "success");
-                    nextTurn();
+                // 3. 高風險夜遊選項 (依據肉體狀態動態重構：若受傷/虛弱則完全封鎖)
+                let isInjured = engineState.player.tags.includes("受傷") || engineState.stats.health < 40;
+                createDynamicOption({
+                    text: isInjured ? "🔒 【肉體重傷禁足】後端強制鎖死高危險夜遊權限" : "🌲 【高風險夜間行動】宵禁後潛入禁忌森林邊緣採集奇獸素材",
+                    badgeText: isInjured ? "行動限制" : "高危暴利",
+                    badgeClass: isInjured ? "badge-lock" : "badge-danger",
+                    disabled: isInjured,
+                    action: () => { runNightRoamAction(); }
                 });
 
-                // 回復選項 2：動態生成 ── 蜂蜜公爵巧克力 (僅在焦慮狀態且有錢時完美發揮，沒錢時灰標)
-                let isAnxious = engineState.player.tags.includes("焦慮");
-                let hasGoldForChoc = engineState.stats.galleon >= 15;
-                
-                if (isAnxious) {
-                    createOption("🍫 【動態醫療】吃下一整塊蜂蜜公爵的「特濃精神巧克力」 (花費 15 加隆 ｜ 心情強力回補 +50)", (!hasGoldForChoc) ? "鎖定" : "回復", () => {
-                        adjustStats(0, 50, -15);
-                        writeToStream("【玩家行動】", "巧克力在舌尖融化，一股溫熱的魔力流向四肢，將大腦中殘留的黑魔法焦慮陰影一掃而空。", "player");
-                        triggerToast("🍫 精神污染已被巧克力屏障驅逐！心情+50", "success");
-                        nextTurn();
-                    });
-                }
+                // 4. 新增：【回復指數專用選項】 ── 安穩睡眠
+                createDynamicOption({
+                    text: "🛏️ 【恢復時段：安穩睡眠】回到學院新宿舍進行魔力調息",
+                    badgeText: "心情+15 ｜ 健康+20 ｜ 拔除負面狀態",
+                    badgeClass: "badge-rec",
+                    isRecovery: true, // 觸發綠色輝芒樣式
+                    action: () => { runRecoveryAction(); }
+                });
 
-                // 回復選項 3：動態生成 ── 聖蒙果魔藥醫療 (當健康跌破 50 且有錢時解鎖，沒錢時鎖定)
-                let isInjured = engineState.stats.health < 50;
-                let hasGoldForMed = engineState.stats.galleon >= 40;
-
-                if (isInjured) {
-                    createOption("🧪 【特許醫療】自費服用聖蒙果巫師醫院特供的「強力補骨藥劑」 (花費 40 加隆 ｜ 肉體健康+50，強力拔除受傷標籤)", (!hasGoldForMed) ? "鎖定" : "回復", () => {
-                        adjustStats(50, 0, -40);
-                        writeToStream("【玩家行動】", "你忍著極度苦澀的魔藥味將其一飲而盡。受損的肋骨與長袍下的傷口在金光下快速癒合。", "player");
-                        triggerToast("💚 傷口劇烈修復！健康+50", "success");
-                        nextTurn();
+                // 5. 新增：【血統動態特權選項】 ── 只有麻瓜出身才能觸發的獨特思維
+                if (engineState.player.bloodline === "麻瓜出身") {
+                    createDynamicOption({
+                        text: "🧠 【麻瓜思維 (Muggle Logic)】利用非傳統邏輯解析古代煉金矩陣",
+                        badgeText: "隱藏特權",
+                        badgeClass: "badge-rec",
+                        isTrait: true, // 觸發藍色特權樣式
+                        action: () => { runMuggleTraitAction(); }
                     });
                 }
             }
-            else if(engineState.scenePointer === "dead") {
-                writeToStream("【命運終結】", "你的指標歸零。數據庫覆寫宣告失效。遊戲結束。", "system");
+            else if(engineState.scenePointer === "died") {
+                writeToStream("【終極夭折結局】", "面板數值脫節歸零，資料庫即時鎖定。你被送往聖蒙果魔法醫院精神傷害科。", "system");
             }
             
             updateHUD();
         }
 
-        // 數值增減累加覆寫
-        function adjustStats(hpDelta, moodDelta, goldDelta) {
-            engineState.stats.health = Math.min(100, Math.max(0, engineState.stats.health + hpDelta));
-            engineState.stats.mood = Math.min(100, Math.max(0, engineState.stats.mood + moodDelta));
-            engineState.stats.galleon = Math.max(0, engineState.stats.galleon + goldDelta);
+        // 動態重構按鈕渲染引擎 (支援恢復、特權、禁用、標籤提示)
+        function createDynamicOption(config) {
+            let wrapper = document.getElementById('options-wrapper');
+            let btn = document.createElement('button');
+            btn.className = "btn-option";
+            
+            // 依據狀況動態賦予樣式類別
+            if (config.isRecovery) btn.classList.add('recovery-mode');
+            if (config.isTrait) btn.classList.add('trait-unlocked');
+            if (config.disabled) btn.disabled = true;
+
+            // 組裝內部按鈕文本與動態標籤
+            btn.innerHTML = `<span>${config.text}</span><span class="indicator-badge ${config.badgeClass}">${config.badgeText}</span>`;
+            
+            btn.onclick = function() {
+                document.querySelectorAll('.btn-option').forEach(b => b.disabled = true);
+                config.action();
+            };
+            wrapper.appendChild(btn);
         }
 
-        function nextTurn() {
-            if (engineState.stats.health <= 0 || engineState.stats.mood <= 0) {
-                engineState.scenePointer = "dead";
+        // 行為控制分支
+        function setupBloodline(line, money) {
+            engineState.player.bloodline = line;
+            engineState.stats.galleon = money;
+            engineState.scenePointer = "ollivander_shop";
+            triggerToast(`💰 經濟難易度重寫：獲得 ${money} G`, "success");
+            advanceEngineScene();
+        }
+
+        function chooseWand(core, bonus) {
+            engineState.inventory.push(`黑胡桃木魔杖 (${core})`);
+            engineState.wand = { core: core, bonus: bonus };
+            engineState.scenePointer = "sorting_ceremony";
+            triggerToast(`🪄 命定魔杖鎖定：成功率修正+${bonus}%`, "success");
+            advanceEngineScene();
+        }
+
+        function completeSorting(house, rep) {
+            engineState.player.house = house;
+            engineState.player.year = "一年級（第一學期）";
+            engineState.skills.transfiguration = 15;
+            engineState.scenePointer = "weekly_loop";
+            triggerToast(`🦅 院風儀式落幕：分入 ${house}`, "success");
+            advanceEngineScene();
+        }
+
+        // 常規日間上課
+        function runClassAction() {
+            engineState.stats.mood -= 12;
+            let dice = Math.floor(Math.random() * 100) + 1;
+            if(dice <= 60) {
+                engineState.skills.potions += 8;
+                engineState.stats.galleon += 15;
+                writeToStream("【玩家行動】", "你冷靜地完成了塞浦路斯教授的藥材調配。「」", "player");
+                triggerToast("✨ 魔藥學熟練度提升 ｜ 加隆+15", "success");
+            } else {
+                writeToStream("【系統提示】", "魔咒走火大爆炸！地窖課堂陷入混亂。", "system");
+                triggerToast("❌ 課堂大失敗", "danger");
+            }
+            nextTickCheck();
+        }
+
+        // 社交約會 (消耗 5 加隆)
+        function runSocialAction() {
+            engineState.stats.galleon -= 5;
+            engineState.npcs["艾莉絲"].favor += 15;
+            engineState.npcs["艾莉絲"].alert -= 5;
+            writeToStream("【玩家對話】", "「艾莉絲，陪我去湖邊吹吹風吧，我帶了熱黃油啤酒。」", "player");
+            writeToStream("【艾莉絲】", "「「真是的……你總是挑我最累的時候過來。不過看在啤酒的份上，走吧。」」", "npc");
+            triggerToast("💞 曖昧對象好感度劇烈上升", "success");
+            nextTickCheck();
+        }
+
+        // 高風險夜遊
+        function runNightRoamAction() {
+            let dice = Math.floor(Math.random() * 100) + 1;
+            if(dice <= 40) {
+                engineState.stats.health -= 45;
+                engineState.player.tags = ["受傷"];
+                writeToStream("【夜間危機捕捉】", "你在森林深處驚動了奇獸爪牙，右臂遭到撕裂性重創！被動獲得 [受傷] 狀態。", "system");
+                triggerToast("🩸 遭遇肉體重創：健康-45", "danger");
+            } else {
+                engineState.stats.galleon += 80;
+                engineState.skills.darkArts += 5;
+                writeToStream("【玩家行動】", "你順利切下獨角獸的尾毛，在翻倒巷地下黑市換取了高額暴利。", "player");
+                triggerToast("💰 黑市走私大成功：加隆+80", "success");
+            }
+            nextTickCheck();
+        }
+
+        // 核心新增功能：【回復指數運算機制】
+        function runRecoveryAction() {
+            // 執行恢復加權
+            engineState.stats.mood = Math.min(100, engineState.stats.mood + 15);
+            engineState.stats.health = Math.min(100, engineState.stats.health + 20);
+            
+            // 清除受傷與疲憊等負面狀態標籤
+            engineState.player.tags = ["正常"];
+            
+            writeToStream("【深層調息修復】", "你鎖上了新宿舍的黑木門，在安穩的睡眠中修復體內透支的魔力與肉體裂紋。傷口開始癒合，焦慮逐漸消散。", "system");
+            triggerToast("💚 生理防線修復：心情+15 ｜ 健康+20 ｜ 負面標籤全數拔除", "success");
+            nextTickCheck();
+        }
+
+        // 核心新增功能：【麻瓜出身隱藏特權行為】
+        function runMuggleTraitAction() {
+            engineState.stats.galleon += 40;
+            engineState.skills.transfiguration += 10;
+            writeToStream("【麻瓜思維．非傳統逆向工程】", "你完全摒棄了傳統魔法理論的死板束縛，利用非傳統邏輯與槓桿機關，瞬間解鎖了煉金矩陣的暗格密道！", "player");
+            triggerToast("✨ 特權通關成功：資產+40 ｜ 變形學大提升", "success");
+            nextTickCheck();
+        }
+
+        // 時鐘脈衝自轉清算
+        function nextTickCheck() {
+            if(engineState.stats.health <= 0 || engineState.stats.mood <= 0) {
+                engineState.scenePointer = "died";
             } else {
                 engineState.timeline.week++;
             }
             advanceEngineScene();
         }
 
-        // 生成帶有狀態標籤辨識的選項按鈕
-        function createOption(text, statusType, callback) {
-            let wrapper = document.getElementById('options-wrapper');
-            let btn = document.createElement('button');
-            btn.className = "btn-option";
-            
-            let badgeText = "ACTION";
-            if (statusType === "鎖定") { btn.disabled = true; badgeText = "❌ 狀態不符/資產不足"; }
-            else if (statusType === "危險") { badgeText = "💀 高危險區"; }
-            else if (statusType === "回復") { badgeText = "💚 指數修復"; }
-            
-            btn.innerHTML = `<span>${text}</span> <span class="btn-badge">${badgeText}</span>`;
-            btn.onclick = function() {
-                document.querySelectorAll('.btn-option').forEach(b => b.disabled = true);
-                callback();
-            };
-            wrapper.appendChild(btn);
-        }
-
+        // 自由輸入 NLP 內核 (禁咒防禦依舊保留)
         function submitCustomNLP() {
-            let input = document.getElementById('custom-nlp-input');
-            let text = input.value.trim();
+            let inputBar = document.getElementById('custom-nlp-input');
+            let text = inputBar.value.trim();
             if(!text) return;
 
-            writeToStream("【自訂言行】", `“${text}”`, "player");
-            if(text.includes("阿哇呾喀呾啦")) {
-                engineState.scenePointer = "dead";
-                writeToStream("【傲羅執法】", "不赦禁咒被魔網捕捉！你被強制送往阿茲卡班審判室。", "system");
+            writeToStream("【自訂巫師決策】", `“${text}”`, "player");
+
+            if(text.includes("阿哇呾喀呾啦") || text.includes("索命咒")) {
+                engineState.scenePointer = "died";
+                writeToStream("【部傲羅逮捕線】", "警告！全校監視網偵測到不赦禁咒！你已被傲羅當街拿下，存檔快照宣告凍結，流放至阿茲卡班審判艙！", "system");
+                triggerToast("💀 觸發終極社會性死亡", "danger");
             } else {
                 engineState.stats.mood -= 5;
-                writeToStream("【時鐘自轉】", "自訂因果已寫入後端。時間向前推進。", "system");
+                writeToStream("【自轉時鐘】", "去結構化行為已被 DM 內核吞噬消化，時間流逝。", "system");
             }
 
-            input.value = "";
-            nextTurn();
+            inputBar.value = "";
+            nextTickCheck();
         }
 
+        // 本地持久層控制協議 (LocalStorage)
         function saveSnapshot() {
             localStorage.setItem('hogwarts_dynamic_v3', JSON.stringify(engineState));
-            triggerToast("💾 全狀態數據快照已覆寫鎖定！", "success");
+            triggerToast("💾 全狀態數據快照已印入本地持久空間！", "success");
         }
 
         function loadSnapshot() {
@@ -412,11 +506,12 @@
             if(data) {
                 engineState = JSON.parse(data);
                 document.getElementById('log-stream').innerHTML = "";
-                writeToStream("【逆流成功】", "快照數據讀取完畢，已成功跨越多輪對話狀態遞延。", "system");
+                writeToStream("【時空回溯】", "快照傳遞協定成功覆寫當前數據，防止屬性漂移。", "system");
                 updateHUD();
                 advanceEngineScene();
+                triggerToast("📜 存檔名軌載入成功！", "success");
             } else {
-                triggerToast("⚠️ 找不到本機快照存檔。", "danger");
+                triggerToast("⚠️ 未偵測到有效的魔法存檔。", "danger");
             }
         }
     </script>
