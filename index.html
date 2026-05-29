@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>霍格華茲魔法學院人生模擬器 | 全功能網頁化終極主宰 Ver.3.0</title>
+    <title>霍格華茲魔法學院人生模擬器 | 終極自訂版 Ver.3.0</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <style>
@@ -34,64 +34,76 @@
             height: 100vh;
         }
 
-        /* 電影級魔法開場動畫過場層 */
-        .opening-layer {
+        /* 💡 復原：絢麗魔法陣旋轉開頭動畫過場層 */
+        #intro-screen {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, #130f26 0%, #000000 100%);
-            z-index: 9999;
+            background: radial-gradient(circle at center, #160f2e 0%, #030207 100%);
+            z-index: 99999;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 1.5s ease, visibility 1.5s ease;
+            transition: opacity 1.2s ease-in-out, visibility 1.2s ease-in-out;
         }
-        .opening-frame {
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            padding: 50px 70px;
-            background: rgba(15, 17, 26, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: inset 0 0 40px rgba(155, 93, 229, 0.1), 0 30px 60px rgba(0,0,0,0.9);
-            text-align: center;
-            opacity: 0;
-            transform: scale(0.95);
-            animation: cinematicReveal 3.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+
+        .magic-circle {
+            width: 220px;
+            height: 220px;
+            border: 2px dashed var(--accent-gold);
+            border-radius: 50%;
+            position: relative;
+            animation: rotateCircle 20s linear infinite;
+            box-shadow: 0 0 40px rgba(155, 93, 229, 0.4);
         }
-        .opening-crest {
-            font-size: 3.5rem;
-            margin-bottom: 18px;
+
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            top: 12px; left: 12px; right: 12px; bottom: 12px;
+            border: 1px solid var(--accent-magic);
+            border-radius: 50%;
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        .magic-rune {
+            position: absolute;
+            width: 100%; height: 100%;
+            top: 0; left: 0;
+            background: linear-gradient(45deg, transparent 44%, var(--accent-gold) 49%, var(--accent-gold) 51%, transparent 56%);
+        }
+
+        .magic-title {
+            margin-top: 35px;
+            font-size: 1.8rem;
             color: var(--accent-gold);
-            text-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
-            animation: crestGlow 2s ease-in-out infinite alternate;
-        }
-        .opening-text {
-            color: var(--accent-gold);
-            font-size: 2.2rem;
-            letter-spacing: 8px;
-            font-weight: 700;
-            margin-bottom: 14px;
-            text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
-        }
-        .opening-sub {
-            color: var(--text-muted);
-            font-size: 0.85rem;
             letter-spacing: 4px;
-            text-transform: uppercase;
-            font-weight: 600;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+            text-align: center;
+            font-weight: 700;
         }
 
-        @keyframes cinematicReveal {
-            0% { opacity: 0; transform: scale(0.95); filter: blur(6px); }
-            20% { opacity: 1; transform: scale(1); filter: blur(0); }
-            80% { opacity: 1; transform: scale(1.02); filter: blur(0); }
-            100% { opacity: 0; transform: scale(1.06); filter: blur(4px); }
-        }
-        @keyframes crestGlow {
-            0% { transform: translateY(0); text-shadow: 0 0 15px rgba(155, 93, 229, 0.3); }
-            100% { transform: translateY(-5px); text-shadow: 0 0 35px rgba(212, 175, 55, 0.7); }
+        .enter-btn {
+            margin-top: 30px;
+            padding: 12px 40px;
+            background: transparent;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            cursor: pointer;
+            font-size: 1.05rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
         }
 
-        /* 頂部控制欄 */
+        .enter-btn:hover {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 25px var(--accent-gold);
+        }
+
+        /* 頂部控制導航欄 */
         header {
             background-color: var(--bg-panel);
             border-bottom: 1px solid var(--border-color);
@@ -129,7 +141,7 @@
             color: var(--bg-deep);
         }
 
-        /* 行動端頁籤控制列 */
+        /* 行動端分頁頁籤 */
         .mobile-tabs {
             display: none;
             background-color: var(--bg-panel);
@@ -154,7 +166,7 @@
             border-bottom: 2px solid var(--accent-gold);
         }
 
-        /* 遊戲核心雙欄架構 */
+        /* 雙欄主遊戲框架佈局 */
         .game-container {
             display: flex;
             height: calc(100vh - 60px);
@@ -162,7 +174,7 @@
         }
 
         .sidebar {
-            width: 430px;
+            width: 440px;
             background-color: var(--bg-panel);
             border-right: 1px solid var(--border-color);
             display: flex;
@@ -227,7 +239,7 @@
             font-weight: 600;
         }
 
-        /* 數據看板 Markdown 樣式優化 */
+        /* 數據快照面板 Markdown 樣式調校 */
         .profile-box, .forum-box { font-size: 0.85rem; line-height: 1.6; }
         .profile-box h2, .profile-box h3, .forum-box h2, .forum-box h3 {
             color: var(--accent-gold);
@@ -255,7 +267,7 @@
             background: rgba(155, 93, 229, 0.01); border: 1px dashed rgba(155, 93, 229, 0.15); padding: 14px; border-radius: 6px;
         }
 
-        /* 沉浸式對白框設計 */
+        /* 小說對話氣氛方塊 */
         .story-block {
             background-color: var(--bg-panel);
             border: 1px solid var(--border-color);
@@ -268,7 +280,7 @@
         .story-block p { line-height: 1.6 !important; margin-bottom: 12px; }
         .story-block strong { color: var(--accent-gold); }
 
-        /* 結構化動態按鈕間距 */
+        /* 選項群按鈕樣式 */
         .options-container { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 8px; }
 
         .option-btn {
@@ -292,7 +304,7 @@
         }
         .option-btn strong { color: var(--accent-gold); margin-right: 6px; }
 
-        /* 去結構化自由決策控制台 */
+        /* 自由對抗對策盒 */
         .custom-input-wrapper, .decryption-input-wrapper { display: flex; gap: 10px; width: 100%; }
         .custom-input-wrapper input, .decryption-input-wrapper input {
             background-color: var(--bg-deep); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; font-size: 0.9rem;
@@ -311,16 +323,16 @@
         #decrypt-id-input { flex: 0 0 130px; }
         #decrypt-guess-input { flex: 1; }
 
-        /* 權力審查大門覆蓋層 */
+        /* 蓋板角色填寫中樞 */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.9);
+            background-color: rgba(0,0,0,0.92);
             backdrop-filter: blur(8px);
             display: flex; justify-content: center; align-items: center; z-index: 1000;
         }
         .modal-content {
-            background-color: var(--bg-panel); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 30px; width: 95%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative;
+            background-color: var(--bg-panel); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 30px; width: 95%; max-width: 680px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative;
         }
         .modal-content h2 { color: var(--accent-gold); margin-bottom: 16px; font-size: 1.3rem; text-align: center; letter-spacing: 1px; }
         .modal-close-btn {
@@ -342,7 +354,7 @@
         }
         .form-group select option { background-color: var(--bg-deep); color: var(--text-main); }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent-gold); }
-        .form-group textarea { height: 70px; resize: none; }
+        .form-group textarea { height: 65px; resize: none; }
         
         .modal-btn {
             width: 100%; background-color: var(--accent-gold); color: var(--bg-deep); border: none; padding: 14px; border-radius: 4px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 15px; letter-spacing: 1px; transition: background 0.2s;
@@ -350,10 +362,11 @@
         .modal-btn:hover { background-color: var(--accent-gold-hover); }
 
         .decrypt-modal-content { border: 1px solid var(--accent-magic) !important; text-align: center; }
-        .decrypt-status-icon { font-size: 2.5rem; margin-bottom: 12px; }
-
         .hidden { display: none !important; }
         .loading-spinner { display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--accent-gold); font-style: italic; padding: 5px; font-size: 0.85rem; }
+
+        @keyframes rotateCircle { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.7; } }
 
         @media (max-width: 768px) {
             .mobile-tabs { display: flex; }
@@ -368,8 +381,7 @@
             .custom-input-wrapper, .decryption-input-wrapper { flex-direction: column; gap: 6px; }
             .custom-input-wrapper input, .decryption-input-wrapper input { width: 100% !important; }
             .custom-input-wrapper button, .decryption-input-wrapper button { width: 100% !important; height: 40px; }
-            .option-btn { padding: 12px 16px; font-size: 0.9rem; gap: 14px; }
-
+            
             body.show-profile .sidebar { display: block; }
             body.show-profile #forum-section { display: none; }
             body.show-profile .main-content { display: none; }
@@ -384,37 +396,36 @@
 </head>
 <body>
 
-    <div id="opening-canvas" class="opening-layer">
-        <div class="opening-frame">
-            <div class="opening-crest">✨</div>
-            <div class="opening-text">霍格華茲學院</div>
-            <div class="opening-sub">人生模擬器 ｜ 數據網格終極控制端 V3.0</div>
+    <div id="intro-screen">
+        <div class="magic-circle">
+            <div class="magic-rune"></div>
         </div>
+        <div class="magic-title">霍格華茲魔法學院人生模擬器<br><span style="font-size:0.95rem; color:var(--text-muted); font-weight:normal; letter-spacing:1px;">後端持久快照傳遞核心協定 V3.0</span></div>
+        <button class="enter-btn" onclick="advanceToIntroPortal()">推開魔法大門</button>
     </div>
 
     <header>
         <h1>⚡ HOGWARTS ENGINE <span style="font-size: 0.75rem; color: var(--text-muted);">Core V3.0</span></h1>
         <div class="header-actions">
-            <button onclick="toggleApiKeyModal()">⚙️ 存檔/API金鑰</button>
-            <button onclick="restartGame()" style="border-color: var(--threat-red); color: var(--threat-red);">🔄 重置名冊</button>
+            <button onclick="toggleApiKeyModal()">⚙️ 快照存檔/金鑰連結</button>
+            <button onclick="restartGame()" style="border-color: var(--threat-red); color: var(--threat-red);">🔄 清空重置</button>
         </div>
     </header>
 
     <div class="mobile-tabs">
-        <div class="tab-item active" id="tab-story" onclick="switchMobileTab('story')">📖 羊皮紙卷</div>
-        <div class="tab-item" id="tab-profile" onclick="switchMobileTab('profile')">📋 巫師名冊</div>
-        <div class="tab-item" id="tab-forum" onclick="switchMobileTab('forum')">📱 校園傳聞</div>
+        <div class="tab-item active" id="tab-story" onclick="switchMobileTab('story')">📖 劇情卷軸</div>
+        <div class="tab-item" id="tab-profile" onclick="switchMobileTab('profile')">📋 數據快照</div>
+        <div class="tab-item" id="tab-forum" onclick="switchMobileTab('forum')">📱 預言流言</div>
     </div>
 
     <div class="game-container">
         <aside class="sidebar" id="game-sidebar">
             <div>
-                <div class="section-title">📋 學生即時動態檔案 (State Snapshot)</div>
+                <div class="section-title">📋 學生即時數據快照優先面板 (Snapshot)</div>
                 <div id="profile-container" class="profile-box"></div>
             </div>
-
             <div id="forum-section" class="forum-section-container">
-                <div class="section-title">📱 校園流言蜚語 • 預言家日報動態快報</div>
+                <div class="section-title">📱 貓頭鷹地下流言蜚語看板</div>
                 <div id="forum-container" class="forum-box"></div>
             </div>
         </aside>
@@ -422,7 +433,7 @@
         <main class="main-content" id="game-main">
             <div id="story-stream" class="story-stream">
                 <div class="story-block">
-                    <p><strong>// 系統內核提示 //</strong> 歡迎來到置頂優先權傳遞協定。正在等待全新世界線初始化提交。請點擊上方金鑰配置以熱更新後端代碼...</p>
+                    <p><strong>// 核心狀態引擎提示 //</strong> 等待新生特質建檔提交。請點擊上方「快照存檔/金鑰連結」端口配置後，啟動全新世界線運行...</p>
                 </div>
             </div>
 
@@ -430,7 +441,7 @@
                 <div id="choices-section">
                     <div class="collapsible-header" onclick="toggleSection('choices-wrapper-content')">
                         <div class="section-title">🎯 命運博弈分歧抉擇</div>
-                        <span class="toggle-icon" id="choices-wrapper-content-icon">▼ 摺疊面板</span>
+                        <span class="toggle-icon" id="choices-wrapper-content-icon">▼ 摺疊控制台</span>
                     </div>
                     <div id="choices-wrapper-content" class="collapsible-content">
                         <div id="options-container" class="options-container"></div>
@@ -439,20 +450,20 @@
 
                 <div class="decryption-box-wrapper" style="border-top: 1px dashed var(--border-color); padding-top: 8px;">
                     <div class="collapsible-header" onclick="toggleSection('decryption-wrapper-content')">
-                        <div class="section-title" style="color: var(--accent-magic); border-left-color: var(--accent-magic); font-size: 0.8rem;">🕵️ 【魔咒逆向工程】圖書館禁書區符文解密主控台</div>
+                        <div class="section-title" style="color: var(--accent-magic); border-left-color: var(--accent-magic); font-size: 0.8rem;">🕵️ 【古老魔咒工程】圖書館禁書區符文解密端口</div>
                         <span class="toggle-icon" id="decryption-wrapper-content-icon" style="color: var(--accent-magic);">▼ 展開面板</span>
                     </div>
                     <div id="decryption-wrapper-content" class="collapsible-content folded" style="margin-top: 10px;">
                         <div class="decryption-input-wrapper">
-                            <input type="text" id="decrypt-id-input" placeholder="未知匿名ID">
-                            <input type="text" id="decrypt-guess-input" placeholder="【填入真實身份猜測或投入對抗的搏弈籌碼...】">
-                            <button onclick="submitDecryptionAction()" style="background-color: var(--accent-magic); color: #fff;">發起破譯</button>
+                            <input type="text" id="decrypt-id-input" placeholder="未知代碼ID">
+                            <input type="text" id="decrypt-guess-input" placeholder="【投入你的身份破譯猜測或博弈秘密籌碼...】">
+                            <button onclick="submitDecryptionAction()" style="background-color: var(--accent-magic); color: #fff;">發起對抗</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="loading-indicator" class="loading-spinner hidden">
-                    <span>⚡ 正在投擲隱性骰點並解構大局自轉時鐘脈衝...</span>
+                    <span>⚡ 正在投擲隱性百面骰判定並消耗自轉時鐘隊列...</span>
                 </div>
             </div>
         </main>
@@ -461,23 +472,24 @@
     <div id="start-portal-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <button class="modal-close-btn" onclick="toggleApiKeyModal()">&times;</button>
-            <h2>📜 霍格華茲學院 • 入學特質申報中樞</h2>
+            <h2>📜 霍格華茲學院 • 入學新生特質申報中樞</h2>
             
             <div id="portal-menu-view" class="options-container" style="margin-top: 20px;">
                 <button class="option-btn" onclick="navigateToPortalSubView('portal-char-view')">
-                    <strong>[ 軌道 A ]</strong> 建立全新原創世界線開局
+                    <strong>[ 軌道 A ]</strong> 配置高擬真新生特質開局
                 </button>
                 <button class="option-btn" onclick="navigateToPortalSubView('portal-load-view')">
-                    <strong>[ 軌道 B ]</strong> 提取高比例 LZ-String 存檔代碼
+                    <strong>[ 軌道 B ]</strong> 讀取高比例環境穿梭 LZ-String 代碼
                 </button>
                 <button class="option-btn" onclick="navigateToPortalSubView('portal-api-view')" style="text-align: center;">
-                    <span class="shrunk-dashed-title">配置大模型連線端口金鑰 API KEY</span>
+                    <span class="shrunk-dashed-title">綁定神經網路大模型連線 API KEY</span>
                 </button>
             </div>
 
             <div id="portal-char-view" class="hidden" style="margin-top: 15px;">
-                <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 12px;">🌟 新生入學特質建檔</div>
-                <div class="modal-subsection-title">一、 基本檔案雙主鍵</div>
+                <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 12px;">🌟 命定新生特質基因建檔</div>
+                
+                <div class="modal-subsection-title">一、 基礎主鍵資料</div>
                 <div class="form-row">
                     <div class="form-group"><label>中文姓名：</label><input type="text" id="char-name" value="林恩·沃克"></div>
                     <div class="form-group"><label>英文譯名：</label><input type="text" id="char-eng-name" value="Lynn Walker"></div>
@@ -485,182 +497,164 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>巫師性別：</label>
-                        <select id="char-gender"><option value="女">女 (妳/她)</option><option value="男" selected>男 (你/他)</option></select>
+                        <select id="char-gender"><option value="男" selected>男 (你/他)</option><option value="女">女 (妳/她)</option></select>
                     </div>
                     <div class="form-group">
-                        <label>血統起源 (重寫初始經濟難易度)：</label>
+                        <label>血統起源 (決定初始貨幣與隱性防線)：</label>
                         <select id="char-blood">
-                            <option value="純血家族">純血家族 (開局 500 加隆，魅力常駐+10，自帶世家政爭包袱)</option>
-                            <option value="混血家庭" selected>混血家庭 (開局 150 加隆，不具包袱，解鎖黃金社交彈性)</option>
-                            <option value="麻瓜出身">麻瓜出身 (開局 30 加隆，匱乏開局，解鎖獨特麻瓜思維選項)</option>
+                            <option value="純血家族">純血家族 (500加隆 ｜ 魅力常駐+10 ｜ 具備家族政爭包袱)</option>
+                            <option value="混血家庭" selected>混血家庭 (150加隆 ｜ 黃金社交彈性 ｜ 無血統政治負擔)</option>
+                            <option value="麻瓜出身">麻瓜出身 (30加隆 ｜ 匱乏開局 ｜ 解鎖獨特麻瓜思維邏輯)</option>
                         </select>
                     </div>
                 </div>
-
-                <div class="modal-subsection-title">二、 外貌與性格標籤之語意映射</div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>外貌第一印象：</label>
+                        <label>外貌視覺印象映射：</label>
                         <select id="char-vibe">
-                            <option value="蒼白精緻 / 華貴">蒼白精緻 / 華貴 (【魅力】立即 +15，世家初始好感上升)</option>
-                            <option value="眼神銳利 / 孤僻">眼神銳利 / 孤僻 (【談吐】立即 +10，正派教授喜好降低)</option>
-                            <option value="溫和樸素 / 平凡">溫和樸素 / 平凡 (降低全校具名 NPC 的初始戒備防線)</option>
+                            <option value="蒼白精緻 / 華貴">蒼白精緻 / 華貴 (【魅力】+15，純血好感外掛)</option>
+                            <option value="眼神銳利 / 孤僻">眼神銳利 / 孤僻 (【談吐】+10，教授初始防備上升)</option>
+                            <option value="溫和樸素 / 平凡" selected>溫和樸素 / 平凡 (具備欺騙性，全校 NPC 初始戒備值-10)</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>性格心理抗性天賦：</label>
+                        <label>性格心理生理抗性天賦：</label>
                         <select id="char-talent">
-                            <option value="冷靜沉著">冷靜沉著 (精神抗性：大失敗時心情跌幅被動降低 20%)</option>
-                            <option value="桀驁不馴">桀驁不馴 (冒險家：防禦術提升速度+15%，夜遊閃避判定+10%)</option>
-                            <option value="敏感多疑">敏感多疑 (防禦型：其餘 NPC 對玩家套話套謊成功率降低 30%)</option>
+                            <option value="冷靜沉著">冷靜沉著 (精神不崩潰：大失敗時心情扣除跌幅降低 20%)</option>
+                            <option value="桀驁不馴">桀驁不馴 (黑魔法防禦術速成提升15%，夜遊閃避抓捕+10%)</option>
+                            <option value="敏感多疑">敏感多疑 (反套話防線：NPC 對玩家欺騙套話率降低 30%)</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="modal-subsection-title">三、 命定戀愛對象自訂子系統 (青梅竹馬機制)</div>
+                <div class="modal-subsection-title">二、 家傳魔杖基因（前置武器屬性偏向）</div>
                 <div class="form-row">
-                    <div class="form-group"><label>聚焦對象姓名：</label><input type="text" id="char-love-name" value="艾莉絲·華勒斯"></div>
                     <div class="form-group">
-                        <label>對象性格動機標籤：</label>
+                        <label>魔杖木材品質：</label>
+                        <select id="char-wand-wood">
+                            <option value="黑胡桃木 (Black Walnut)">黑胡桃木 (適合心思細密、本能敏銳者)</option>
+                            <option value="接骨木 (Elder)">接骨木 (充斥著強大而難以駕馭的決決鬥魔力殘響)</option>
+                            <option value="銀梣木 (Silver Ash)">銀梣木 (高貴純潔，能與正面魔力高度共鳴)</option>
+                            <option value="冬青木 (Holly)">冬青木 (具備極強的防禦與靈魂淨化偏向)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>魔杖核心芯材：</label>
+                        <select id="char-wand-core">
+                            <option value="龍的心弦 (Dragon Heartstring)">龍的心弦 (毀滅暴走之矛：威力加權20% ｜ 低心情易反噬)</option>
+                            <option value="獨角獸毛 (Unicorn Hair)">獨角獸毛 (穩定純潔之盾：成功率+30% ｜ 免疫黑魔法漂移)</option>
+                            <option value="鳳凰羽毛 (Phoenix Feather)">鳳凰羽毛 (高傲涅槃之翼：極難馴服 ｜ 觸發低血不死突發傳送)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-subsection-title">三、 進階世家底蘊與野心自訂</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>隨身攜帶之傳家珍寶：</label>
+                        <input type="text" id="char-artifact" value="考德威爾黑曜石蛇形護身符">
+                    </div>
+                    <div class="form-group">
+                        <label>守護神/奇獸親和與化獸先兆：</label>
+                        <input type="text" id="char-beast" value="夜影豹的幽冥魔力共鳴">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>分院大禮堂精神共鳴期望：</label>
+                        <select id="char-house-expect">
+                            <option value="史萊哲林 (Slytherin)">史萊哲林 (利益至上，世家陣營初始好感+20)</option>
+                            <option value="雷文克勞 (Ravenclaw)">雷文克勞 (冷酷求知，學科與禁書區效率+15%)</option>
+                            <option value="葛來分多 (Gryffindor)">葛來分多 (肉身對抗，健康上限+10 ｜ 防禦術速成)</option>
+                            <option value="赫夫帕夫 (Hufflepuff)">赫夫帕夫 (絕對忠誠，全面免除修羅場 ｜ 睡眠恢復加倍)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>初始暗線派系傾向：</label>
+                        <select id="char-faction">
+                            <option value="卡文迪許世家同盟陣營">卡文迪許陣營 (親傲羅軍備權貴)</option>
+                            <option value="華勒斯黑市秘密網絡派系" selected>華勒斯網絡 (親翻倒巷地下交易圈)</option>
+                            <option value="蒙特羅斯巫審加摩政要圈">蒙特羅斯派系 (親魔法部最高決策核心)</option>
+                            <option value="中立中產學術自由派">中立學術派 (拒絕捲入階級政爭包袱)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>不可告人、牽動大局的靈魂深層秘密/歷史動機：</label>
+                    <textarea id="char-soul-secret">十一歲魔力暴走時曾短暫共鳴過翻倒巷「暮色議會」墮落長老的禁忌靈魂碎片</textarea>
+                </div>
+
+                <div class="modal-subsection-title">四、 命定殘響攻略對象配置</div>
+                <div class="form-row">
+                    <div class="form-group"><label>對象具名姓名：</label><input type="text" id="char-love-name" value="艾莉絲·華勒斯"></div>
+                    <div class="form-group">
+                        <label>對象性格特徵標籤：</label>
                         <select id="char-love-trait">
                             <option value="傲嬌穩定">傲嬌穩定 (Tsundere)</option>
                             <option value="利益至上">利益至上 (Utilitarian)</option>
-                            <option value="佔有欲極強 (病嬌)">佔有欲極強 (病嬌 ｜ 醋意值傳播雙倍暴增)</option>
+                            <option value="佔有欲極強 (病嬌)">佔有欲極強 (病嬌 ｜ 觸發雙倍醋意反噬與跟蹤流言規則)</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="modal-subsection-title">四、 玩家偏好與分院傾向 (自決)</div>
-                <div class="form-group"><label>特殊體質選擇 (預設由魔杖共鳴觸發)：</label><input type="text" id="char-style" value="天然爬說嘴"></div>
-                <button class="modal-btn" onclick="triggerNewGameStart()">⚡ 簽署魔法名冊．踏上霍格華茲特快車</button>
+                <button class="modal-btn" onclick="triggerNewGameStart()">⚡ 注入自由意志．踏上霍格華茲特快車</button>
                 <button class="modal-btn" style="background:#202533; color:#cbd5e1; border:1px solid var(--border-color);" onclick="returnToPortalMenu()">返回主選單</button>
             </div>
 
             <div id="portal-load-view" class="hidden" style="margin-top: 15px;">
                 <div style="background: rgba(155, 93, 229, 0.03); padding: 16px; border: 1px dashed var(--accent-magic); border-radius: 6px;">
-                    <div style="font-weight: bold; color: var(--accent-magic); margin-bottom: 8px;">💾 全狀態跨環境解密還原</div>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">請在下方直接貼上由 LZ-String 演算法打包的 Base64 壓縮快照代碼：</p>
-                    <input type="text" id="import-token-input" placeholder="在此貼上加密進度密碼包...">
-                    <button class="modal-btn" onclick="triggerImportSaveStart()">注入密碼重構歷史時空線</button>
+                    <div style="font-weight: bold; color: var(--accent-magic); margin-bottom: 8px;">💾 全狀態跨環境封包回復</div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">請在此貼上使用 LZ-String 壓縮的跨裝置 Base64 快照代碼：</p>
+                    <input type="text" id="import-token-input" placeholder="在此處黏貼進度加密字串...">
+                    <button class="modal-btn" onclick="triggerImportSaveStart()">注入符文重構歷史軌跡</button>
                 </div>
                 <button class="modal-btn" style="background:#202533; color:#cbd5e1; border:1px solid var(--border-color);" onclick="returnToPortalMenu()">返回主選單</button>
             </div>
 
             <div id="portal-api-view" class="hidden" style="margin-top: 15px;">
                 <div style="background: rgba(212,175,55,0.02); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
-                    <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 8px;">🔑 核心 LLM 供應商連線</div>
+                    <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 8px;">🔑 後端模型連線隧道端口</div>
                     <div class="form-group">
-                        <label>選擇後台神經網路引擎：</label>
+                        <label>選擇 LLM 驅動核心：</label>
                         <select id="api-provider">
-                            <option value="gemini">Google Gemini (模型代號: gemini-3.5-flash)</option>
-                            <option value="openai">OpenAI ChatGPT (模型代號: gpt-4o-mini)</option>
+                            <option value="gemini">Google Gemini (預設型號: gemini-3.5-flash)</option>
+                            <option value="openai">OpenAI ChatGPT (型號: gpt-4o-mini)</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>配置核心 API 金鑰密鑰：</label>
-                        <input type="password" id="api-key-input" placeholder="輸入以 AIzaSy... 或 sk-proj-... 開頭的密鑰代碼">
+                        <label>配置連線 API Key 密鑰：</label>
+                        <input type="password" id="api-key-input" placeholder="輸入包含 AIzaSy... 或 sk-proj-... 的密鑰串">
                     </div>
-                    <button class="modal-btn" onclick="saveApiKey()">綁定數據隧道端口</button>
+                    <button class="modal-btn" onclick="saveApiKey()">綁定連線數據鏈</button>
                 </div>
                 <button class="modal-btn" style="background:#202533; color:#cbd5e1; border:1px solid var(--border-color);" onclick="returnToPortalMenu()">返回主選單</button>
             </div>
 
-            <button class="modal-btn" id="portal-copy-btn" onclick="exportSaveToken()" style="background-color: #1a1f2c; color: var(--accent-gold); border: 1px solid var(--border-color); margin-top: 14px;">一鍵打包當前全數據快照碼</button>
+            <button class="modal-btn" id="portal-copy-btn" onclick="exportSaveToken()" style="background-color: #1a1f2c; color: var(--accent-gold); border: 1px solid var(--border-color); margin-top: 14px;">一鍵生成跨環境持存快照碼</button>
         </div>
     </div>
 
     <div id="decrypt-result-modal" class="modal-overlay hidden">
         <div class="modal-content decrypt-modal-content">
             <button class="modal-close-btn" onclick="closeDecryptResultModal()">&times;</button>
-            <div id="decrypt-icon" class="decrypt-status-icon">🔮</div>
-            <h2 id="decrypt-result-title">底層協議破解中</h2>
-            <p id="decrypt-result-message" style="font-size: 0.9rem; line-height: 1.5; margin: 12px 0;">正在對比目標代碼與記憶鏈矩陣...</p>
-            <button class="modal-btn" onclick="closeDecryptResultModal()" style="background-color: #202533; color: #fff;">確認端口變更</button>
+            <div style="font-size:2.5rem; margin-bottom:10px;">🔮</div>
+            <h2 id="decrypt-result-title">魔咒共鳴比對中</h2>
+            <p id="decrypt-result-message" style="font-size: 0.9rem; margin: 12px 0;">正在將輸入對抗線接入多輪對話快照...</p>
+            <button class="modal-btn" onclick="closeDecryptResultModal()" style="background-color: #202533; color: #fff;">確認數據變更</button>
         </div>
     </div>
 
     <script>
-        marked.setOptions({ breaks: true, gfm: true });
-
-        // 預設 HUD 面板配置範本
-        const DEFAULT_PROFILE_MD = `
-# 🏛️ 霍格華茲 • 置頂數據快照面板
-| 屬性區段 | 常駐變量狀態 |
-| :--- | :--- |
-| **巫師姓名** | 載入中... |
-| **血統起源** | \`等待配置\` |
-| **分院院風** | \`未戴分院帽\` |
-| **當前年級** | 一年級前夕 |
-
-### 📊 生理與精神抗性防線
-* 心情狀態跌幅： \`100 / 100\`
-* 肉體完整健康： \`100 / 100\`
-* 顯性狀態標籤： \`正常 (Normal)\`
-
-### 💰 經濟與社交話語權
-* 古靈閣總資產： \`0 Galleons\`
-* 第一印象魅力： \`50\` ｜ 言語說服談吐： \`50\`
-* 校園風雲知名： \`0 [無名小卒]\`
-
-### 🤝 聚焦 NPC 獨立持久關係矩陣
-> ⚠️ 關係解密追蹤狀態： \`[ 未發起禁書區破譯行動 ]\`
-`;
-
-        const DEFAULT_FORUM_MD = `
-# 📱 校園傳聞與預言家日報動態快報
-> ### 🔥 今日即時焦點傳聞
-> 📌 流言主旨： 【王冠與貴族】三大古老巫師世家權力矩陣重組
-> 👤 來源渠道： 貓頭鷹地下密信 ｜ 🕒 脈衝時間： \`週 Tick T1\`
->
-> 「 壟斷飛天掃帚與傲羅軍備的卡文迪許家族、掌控古靈閣秘密對接的華勒斯家族、以及執掌巫審加摩的蒙特羅斯家族，正將目光投向霍格華茲新生名冊... 」
-`;
-
-        // 終極運作中樞核心系統提示詞 (與後端多輪對話無縫銜接)
-        const SYSTEM_INSTRUCTION = `
-《霍格華茲魔法學院人生模擬器》Engine Core Ver.3.0
-妳/你必須扮演完全平行的原創世界線 DM 遊戲主持人，抹除哈利波特原著人物。
-
-📌 世界觀三大世家設定：
-- 卡文迪許家族 (Cavendish)：壟斷飛天掃帚與傲羅軍備。
-- 華勒斯家族 (Valerius)：掌控古靈閣秘密對接與地下黑市。
-- 蒙特羅斯家族 (Montrose)：執掌巫審加摩與聖蒙果資源。
-原創置換教授：奧蕾莉亞·凡斯校長 (雷文克勞出身實用主義)、塞浦路斯教授 (史萊哲林魔藥學陰冷偏心)、布蘭博教授 (赫夫帕夫藥草學看守)。黑巫師威脅模型為「暮色議會 (The Twilight Council)」。
-
-📌 底層數據持存與對抗判定限制（⚠️ 絕對核心死鎖鎖定防禦）：
-1. 變量優先權：不論文字拉扯多長，妳/你生成的對話文本與面板必須強制讀取快照數據。
-2. 稱謂與代名詞精準物理隔離（依據教育部國語辭典規範執行）：
-   - 角色卡性別為【女】，稱呼玩家必須「100% 唯一嚴格使用『妳 / 她』」。
-   - 角色卡性別為【男】，稱呼玩家必須「100% 唯一嚴格使用『你 / 他』」。
-   - 男性人类 NPC 唯一使用『你 / 他』；女性人类 NPC 唯一使用『妳 / 她』。
-   - 客觀代碼、魔法符文、道具、防火牆協議唯一使用『它』。生物與奇獸唯一使用『牠』。
-3. 圖書館解密三次限制機制：針對禁書區符文未知代碼的解密，玩家最多 3 次嘗試機會。必須在狀態欄追蹤剩餘機會（例：\`0x4A1B\` 剩餘機會：3/3）。3次皆錯則鎖定，黑魔法傾向暴增，暮色議會好感狂跌。
-4. 目擊舉報演算分歧：非隱蔽場合施展黑魔法（Tier 1~3，伴隨永久上限削減公式），立即判定 NPC 舉報概率。
-
-🤖 AI 敘事排版控制協議：
-1. 每次回覆單次劇情純文字（不含面板與選項）「必須嚴格高於 1000 字」，重大節點高於 1200 字。包含精細環境鋪陳與 NPC 微表情肢體描寫。所有對白必須符合大韓民國豪門恩怨或英倫冷酷世家語境，台詞一律使用中文雙引號「」。
-2. 每段劇情結尾提供的 【A】、【B】、【C】 三個分歧選項，其選項文字長度「每一項都必須嚴格超過 200 字」高密度推演，且各自包含屬性損耗或恢復係數（例如心情值修復、健康值恢復）。「絕對禁止」輸出關於 【D】 選項的文字。禁止顯示任何字數標註如「(共 X 字)」等提示性贅字。
-
-📌 每次回覆輸出順序必須嚴格遵循以下Token標記，使用分隔線 --- 物理隔离：
-[ 📋 學生即時動態檔案 ]
-# 🏛️ 霍格華茲 • 置頂數據快照面板
-### 👤 基本檔案
-### 📊 生理與精神抗性防線
-### 經濟與社交話語權
-### 🤝 聚焦 NPC 獨立持久關係矩陣
----
-[ 🎬 劇情 ]
----
-[ 📱 校園傳聞與預言家日報動態快報 ]
-# 📱 校園傳聞與預言家日報動態快報
-> ### 🔥 今日即時焦點傳聞
-> 📌 流言主旨： ...
-> ## 📄 【傳聞內文】
-> 「 ... 」
-### 💬 實時地下評論流
-### 📊 魔法網絡風向統計
----
-[ 🎯 分歧選項 ]
-`;
+        // 開場轉場動畫流調度
+        function advanceToIntroPortal() {
+            const intro = document.getElementById('intro-screen');
+            intro.style.opacity = '0';
+            setTimeout(() => {
+                intro.style.visibility = 'hidden';
+                document.getElementById('start-portal-modal').classList.remove('hidden');
+                returnToPortalMenu();
+            }, 1200);
+        }
 
         let chatHistory = [];
         let isWaitingForAI = false;
@@ -759,7 +753,7 @@
             chatHistory = historyArray;
             const lastModelResponse = [...chatHistory].reverse().find(h => h.role === "model");
             if (lastModelResponse) {
-                document.getElementById('story-stream').innerHTML = `<div class="story-block"><p style="color:var(--accent-gold);"><strong>// 時空裂隙逆流重組完畢 //</strong> 已同步最新霍格華茲局勢數據面板。</p></div>`;
+                document.getElementById('story-stream').innerHTML = `<div class="story-block"><p style="color:var(--accent-gold);"><strong>// 時空裂隙逆流重組完畢 //</strong> 已同步最新霍格華茲局局勢數據面板。</p></div>`;
                 parseAndPopulateUI(lastModelResponse.text);
                 document.getElementById('start-portal-modal').classList.add('hidden');
             }
@@ -768,29 +762,18 @@
         window.onload = function() {
             document.getElementById('profile-container').innerHTML = marked.parse(DEFAULT_PROFILE_MD);
             document.getElementById('forum-container').innerHTML = marked.parse(DEFAULT_FORUM_MD);
-            
             const savedKey = localStorage.getItem('game_api_key');
-            
-            setTimeout(() => {
-                const canvas = document.getElementById('opening-canvas');
-                canvas.style.opacity = '0';
-                setTimeout(() => {
-                    canvas.style.visibility = 'hidden';
-                    document.getElementById('start-portal-modal').classList.remove('hidden');
-                    returnToPortalMenu(); 
-                    if (savedKey) {
-                        document.getElementById('api-key-input').value = savedKey;
-                        document.getElementById('api-provider').value = localStorage.getItem('game_api_provider') || 'gemini';
-                        loadGameFromCloud();
-                    }
-                }, 1500);
-            }, 3500);
+            if (savedKey) {
+                document.getElementById('api-key-input').value = savedKey;
+                document.getElementById('api-provider').value = localStorage.getItem('game_api_provider') || 'gemini';
+                loadGameFromCloud();
+            }
         };
 
         function navigateToPortalSubView(viewId) {
             const key = document.getElementById('api-key-input').value.trim() || localStorage.getItem('game_api_key');
             if ((viewId === 'portal-char-view' || viewId === 'portal-load-view') && !key) {
-                alert('🚨 權力審查未通過：在解鎖命運軌道前，必須先配置有效的模型金鑰連線密鑰！');
+                alert('🚨 端口審查未通過：在解鎖命運軌道前，必須先配置有效的模型金鑰連線密鑰！');
                 navigateToPortalSubView('portal-api-view'); return;
             }
             document.getElementById('portal-menu-view').classList.add('hidden');
@@ -833,7 +816,6 @@
                 const jsonStr = LZString.decompressFromBase64(rawToken);
                 if (!jsonStr) throw new Error("解壓軌道不完整，密碼損壞。");
                 const exportData = JSON.parse(jsonStr);
-                
                 if (!exportData.c || !exportData.l) throw new Error("缺少角色原始基因快照。");
 
                 let rebuiltHistory = [
@@ -865,6 +847,53 @@
             }
         }
 
+        // 系統內核大模型提示詞與限制隔離架構
+        const SYSTEM_INSTRUCTION = `
+《霍格華茲魔法學院人生模擬器》Engine Core Ver.3.0
+妳/你必須扮演完全平行的原創世界線 DM 遊戲主持人，抹除哈利波特與伏地魔等原著人物與編年史。
+
+📌 世界觀三大世家設定：
+- 卡文迪許家族 (Cavendish)：壟斷飛天掃帚與傲羅軍備。
+- 華勒斯家族 (Valerius)：掌控古靈閣秘密對接與地下黑市。
+- 蒙特羅斯家族 (Montrose)：執掌巫審加摩與聖蒙果資源。
+原創置換教授：奧蕾莉亞·凡斯校長 (雷文克勞出身實用主義)、塞浦路斯教授 (史萊哲林魔藥學陰冷偏心)、布蘭博教授 (赫夫帕夫藥草學看守)。黑巫師威脅模型為「暮色議會 (The Twilight Council)」。
+
+📌 底層數據持存與對抗判定限制（⚠️ 絕對核心死鎖鎖定防禦）：
+1. 變量優先權：不論文字拉扯多長，妳/你生成的對話文本與面板必須強制讀取快照數據。
+2. 稱謂與代名詞精準物理隔離（依據教育部國語辭典規範執行）：
+   - 角色卡性別為【女】，對玩家稱呼必須唯一且「100% 嚴格唯一使用『妳 / 她』」，不可混用。
+   - 角色卡性別為【男】，對玩家稱呼必須唯一且「100% 嚴格唯一使用『你 / 他』」，不可混用。
+   - 男性人類 NPC 唯一使用『你 / 他』；女性人類 NPC 唯一使用『妳 / 她』。
+   - 客觀代碼、魔法符文、道具、防火牆協議唯一使用『它』。生物與奇獸唯一使用『牠』。
+3. 圖書館解密三次限制機制：圖書館禁書區代碼破譯僅有 3 次嘗試機會。必須在狀態欄追蹤剩餘機會（例：\`0x4A1B\` 剩餘機會：3/3）。3次皆錯則鎖定，黑魔法傾向暴增。
+4. 目擊舉報演算分歧：非隱蔽場景施展黑魔法（Tier 1~3，伴隨永久上限削減），立即判定 NPC 舉報概率。
+
+🤖 AI 敘事排版控制協議：
+1. 每次回覆單次劇情純文字（不含面板與選項）「必須嚴格高於 1000 字」，重大節點高於 1200 字。包含精細環境鋪陳與 NPC 微表情肢體描寫。台詞一律使用中文雙引號「」。
+2. 每段劇情結尾提供的 【A】、【B】、【C】 三個分歧選項，其選項文字長度「每一項都必須嚴格超過 200 字」高密度推演，且包含屬性損耗或恢復值。「絕對禁止」輸出關於 【D】 選項的文字。禁止顯示任何字數標註如「(共 X 字)」等贅字。
+
+📌 每次回覆輸出順序必須嚴格遵循以下Token標記，使用分隔線 --- 物理隔離：
+[ 📋 學生即時動態檔案 ]
+# 🏛️ 霍格華茲 • 置頂數據快照面板
+### 👤 基本檔案
+### 📊 生理與精神抗性防線
+### 經濟與社交話語權
+### 🤝 聚焦 NPC 獨立持久關係矩陣
+---
+[ 🎬 劇情 ]
+---
+[ 📱 校園傳聞與預言家日報動態快報 ]
+# 📱 校園傳聞與預言家日報動態快報
+> ### 🔥 今日即時焦點傳聞
+> 📌 流言主旨： ...
+> ## 📄 【傳聞內文】
+> 「 ... 」
+### 💬 實時地下評論流
+### 📊 魔法網絡風向統計
+---
+[ 🎯 分歧選項 ]
+`;
+
         function startStoryGame() {
             const name = document.getElementById('char-name').value.trim();
             const engName = document.getElementById('char-eng-name').value.trim();
@@ -874,10 +903,18 @@
             const talent = document.getElementById('char-talent').value;
             const loveName = document.getElementById('char-love-name').value.trim();
             const loveTrait = document.getElementById('char-love-trait').value;
-            const style = document.getElementById('char-style').value.trim();
+            const secret = document.getElementById('char-soul-secret').value.trim();
+            
+            // 獲取新增欄位資料
+            const wandWood = document.getElementById('char-wand-wood').value;
+            const wandCore = document.getElementById('char-wand-core').value;
+            const artifact = document.getElementById('char-artifact').value.trim();
+            const beast = document.getElementById('char-beast').value.trim();
+            const houseExpect = document.getElementById('char-house-expect').value;
+            const faction = document.getElementById('char-faction').value;
 
             if (!name || !engName || !loveName) {
-                alert('基本檔案雙主鍵與命定戀愛對象不可為空！'); return;
+                alert('新生基本檔案雙主鍵與命定攻略對象姓名不可空缺！'); return;
             }
 
             let initialGalleons = blood === "純血家族" ? 500 : (blood === "混血家庭" ? 150 : 30);
@@ -891,23 +928,26 @@
 | **中文姓名** | ${name} |
 | **英文譯名** | ${engName} |
 | **血統起源** | \`${blood}\` |
-| **分配學院** | \`分院帽儀式準備中\` |
-| **匿名代碼** | \`${localTokenID}\` |
+| **分配學院** | \`等待入學分院帽儀式自決\` |
+| **傳家珍寶** | \`${artifact}\` |
+| **暗線派系** | \`${faction}\` |
+| **論壇代碼** | \`${localTokenID}\` |
 
 ### 📊 生理與精神抗性防線
-* 心情狀態跌幅： \`100 / 100\`
+* 心情狀態防線： \`100 / 100\`
 * 肉體完整健康： \`100 / 100\`
-* 顯性狀態標籤： \`正常 (Normal)\` ｜ 天賦： \`${talent}\`
+* 狀態標籤數組： \`正常 (Normal)\` ｜ 天賦： \`${talent}\`
+* 奇獸親和先兆： \`${beast}\`
 
 ### 經濟與社交話語權
 * 古靈閣總資產： \`${initialGalleons} Galleons\`
-* 視覺外貌魅力： \`50 (外貌映射: ${vibe})\`
+* 視覺外貌魅力： \`50 (印象: ${vibe})\`
 * 言語說服談吐： \`50\`
-* 校園知名標題： \`0 [無名小卒]\`
+* 命定武器裝備： \`${wandWood} 配 ${wandCore}\`
 
 ### 🤝 聚焦 NPC 獨立持久關係矩陣
-1. ${loveName} (青梅竹馬 ｜ 性格: ${loveTrait}) ｜ 好感度: \`+25\` ｜ 戒備值: \`+5\`
-2. 奧蕾莉亞·凡斯 校長 (功能主席: 雷文克勞) ｜ 好感度: \`0\` ｜ 戒備值: \`+20\`
+1. ${loveName} (命定殘響 ｜ 性格: ${loveTrait}) ｜ 好感度: \`+25\` ｜ 戒備值: \`+5\`
+2. 塞浦路斯 教授 (功能主席: 史萊哲林院長) ｜ 好感度: \`0\` ｜ 戒備值: \`+40\`
 `;
             document.getElementById('profile-container').innerHTML = marked.parse(initialLocalProfile);
             document.getElementById('story-stream').innerHTML = '';
@@ -919,13 +959,17 @@
 
             const characterCardPrompt = `
 【玩家角色卡提交 - 遊戲正式開啟】
-這是新生的初始化屬性快照配置，請調用此面板覆寫差值並演繹第一章序章劇情（九又四分之三月台與特快車遭遇）：
-- 姓名與英文：${name} / ${engName} ｜ 性別代名詞限制：${gender}
-- 血統：${blood} (初始資產: ${initialGalleons} 加隆) ｜ 天賦特質體質：${style}
-- 映射標籤：外貌(${vibe}) ｜ 性格(${talent})
-- 命定自訂攻略對象常駐錨定：${loveName} (性格: ${loveTrait}，初始好感+25/戒備+5/醋意0)
+這是新生的多維度擴充初始化屬性快照配置，請將其完全寫入後台數據庫中，並立刻開啟第一章序章情節：
+- 姓名與譯名：${name} / ${engName} ｜ 物理性別約束：${gender}
+- 血統起源：${blood} (初始資金: ${initialGalleons} 加隆)
+- 外貌映射：${vibe} ｜ 心理天賦：${talent}
+- 魔杖配置偏向：${wandWood} 配上 ${wandCore}
+- 傳家底蘊道具：${artifact} ｜ 奇獸親和先兆：${beast}
+- 學生期望共鳴院風：${houseExpect} ｜ 暗線初始政治派系傾向：${faction}
+- 深層靈魂秘密動機：${secret}
+- 命定殘響自訂對象：${loveName} (性格特徵: ${loveTrait}，初始好感+25/戒備+5/醋意0)
 
-請直接開啟第一幕時段循環，並嚴格按照規範的四段物理隔離格式進行Token輸出。`;
+請直接開啟第一幕，嚴格按照規範的四段隔離Token標籤格式進行格式化輸出。`;
 
             document.getElementById('start-portal-modal').classList.add('hidden');
             sendPromptToAI(characterCardPrompt);
