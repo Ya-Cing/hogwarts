@@ -12,7 +12,758 @@
             --accent-purple: #8a2be2;
             --accent-blue: #00bfff;
             --accent-red: #ff4500;
-            --text-main: #e2e8f0;
+            --text-main: #e2e8f0;<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霍格華茲魔法學院人生模擬器 - 沉浸對話版</title>
+    <style>
+        :root {
+            --bg-dark: #07070b;
+            --bg-panel: #11111a;
+            --bg-dialogue: rgba(18, 18, 29, 0.95);
+            --accent-gold: #d4af37;
+            --accent-silver: #a3b8cc;
+            --accent-purple: #9b5de5;
+            --accent-blue: #00bfff;
+            --accent-red: #ff4757;
+            --accent-green: #2ed573;
+            --text-main: #f1f2f6;
+            --text-muted: #a4b0be;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'PingFang TC', 'Noto Serif TC', 'Microsoft JhengHei', serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 絢麗魔法開頭動畫 */
+        #magic-intro {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #1b1035 0%, #030206 100%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .magic-matrix {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .layer {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+        }
+
+        .layer-1 {
+            width: 240px; height: 240px;
+            border-top-color: var(--accent-gold);
+            border-bottom-color: var(--accent-gold);
+            animation: spin 8s linear infinite;
+        }
+
+        .layer-2 {
+            width: 190px; height: 190px;
+            border-left-color: var(--accent-purple);
+            border-right-color: var(--accent-purple);
+            border-style: dashed;
+            animation: spinBack 6s linear infinite;
+        }
+
+        .layer-3 {
+            width: 130px; height: 130px;
+            border: 1px double var(--accent-blue);
+            box-shadow: inset 0 0 20px rgba(0, 191, 255, 0.2);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        .core-glow {
+            width: 40px; height: 40px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 40px 20px rgba(212, 175, 55, 0.6), 0 0 20px 10px rgba(155, 93, 229, 0.4);
+        }
+
+        .intro-title {
+            margin-top: 40px;
+            font-size: 2.2rem;
+            color: var(--accent-gold);
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .intro-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+
+        .btn-start {
+            margin-top: 40px;
+            padding: 14px 40px;
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.4s;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+        }
+
+        .btn-start:hover {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+        }
+
+        /* 雙端響應式主架構 */
+        #game-view {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            grid-template-columns: 340px 1fr;
+        }
+
+        @media (max-width: 900px) {
+            #game-view {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        /* 左側狀態儀表板 (HUD Dashboard) */
+        #hud-sidebar {
+            background-color: var(--bg-panel);
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 900px) {
+            #hud-sidebar {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                max-height: 220px;
+                padding: 12px;
+            }
+        }
+
+        .panel-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.12);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .panel-header {
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding-bottom: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .badge {
+            background: var(--accent-purple);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        /* 右側核心對話與劇情舞台 */
+        #stage-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(135deg, #0d0d16 0%, #050508 100%);
+        }
+
+        /* 小說劇情歷史展示區 */
+        #story-wall {
+            flex-grow: 1;
+            padding: 35px 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            font-size: 1.05rem;
+            line-height: 1.9;
+            letter-spacing: 1.2px;
+            color: #d1d2d6;
+        }
+
+        @media (max-width: 600px) {
+            #story-wall {
+                padding: 20px 15px;
+                font-size: 0.95rem;
+                line-height: 1.7;
+            }
+        }
+
+        p.narrative {
+            text-indent: 2em;
+        }
+
+        /* 核心對話渲染組件 */
+        .dialogue-card {
+            background: var(--bg-dialogue);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--accent-gold);
+            padding: 16px 20px;
+            border-radius: 4px;
+            margin: 10px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .dialogue-speaker {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .speaker-ollivander { color: var(--accent-gold); }
+        .speaker-cyprus { color: var(--accent-red); text-shadow: 0 0 5px rgba(255,71,87,0.2); }
+        .speaker-vance { color: var(--accent-blue); }
+        .speaker-hat { color: var(--accent-purple); }
+        .speaker-system { color: var(--accent-blue); font-family: monospace; }
+
+        .dialogue-text {
+            font-style: italic;
+            color: #ffffff;
+        }
+
+        /* 系統高亮標籤 */
+        .spell-node {
+            color: #fff;
+            background: linear-gradient(90deg, rgba(155,93,229,0.4) 0%, transparent 100%);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            border-left: 2px solid var(--accent-purple);
+        }
+
+        .toast-sys {
+            color: var(--accent-blue);
+            background: rgba(0, 191, 255, 0.06);
+            padding: 10px 15px;
+            border-left: 3px solid var(--accent-blue);
+            font-size: 0.9rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 控制與按鈕操作區 */
+        #interactive-deck {
+            padding: 25px 40px;
+            background: rgba(13, 13, 22, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            #interactive-deck { padding: 15px; }
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .btn-choice {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            padding: 15px 20px;
+            text-align: left;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .btn-choice:hover {
+            border-color: var(--accent-gold);
+            background: rgba(212, 175, 55, 0.05);
+            transform: translateX(6px);
+            box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.1);
+        }
+
+        .input-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .text-nlp {
+            flex-grow: 1;
+            background: #09090e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 14px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .btn-nlp-submit {
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-nlp-submit:hover { background: #8a4ed6; }
+
+        .meta-actions {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .btn-meta {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-meta:hover {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
+
+        /* 常規動畫 */
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spinBack { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes pulseGlow { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.05); opacity: 0.9; } }
+    </style>
+</head>
+<body>
+
+    <!-- 絢麗開頭魔法動畫遮罩 -->
+    <div id="magic-intro">
+        <div class="magic-matrix">
+            <div class="layer layer-1"></div>
+            <div class="layer layer-2"></div>
+            <div class="layer layer-3"></div>
+            <div class="core-glow"></div>
+        </div>
+        <div class="intro-title">霍格華茲魔法學院人生模擬器</div>
+        <div class="intro-subtitle">全功能 DM 運作與網頁化終極主宰系統 V3.0</div>
+        <button class="btn-start" onclick="beginSimulation()">推開黑木大門</button>
+    </div>
+
+    <!-- 雙端相容主介面 -->
+    <div id="game-view">
+        <!-- 左側 HUD 狀態數據面板 -->
+        <div id="hud-sidebar">
+            <div class="panel-box">
+                <div class="panel-header">【巫師名冊】</div>
+                <div id="p-profile" style="font-size: 0.85rem; line-height: 1.6;">載入中...</div>
+            </div>
+            
+            <div class="panel-box">
+                <div class="panel-header">【生理與精神狀態】</div>
+                <div class="status-row"><span>精神健康(心情):</span><b id="p-mood">100</b></div>
+                <div class="status-row"><span>肉體極限(健康):</span><b id="p-health">100</b></div>
+                <div style="margin-top: 6px;">狀態標籤: <span id="p-tags" class="badge">正常</span></div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-header">【資產與顯性社交】</div>
+                <div class="status-row"><span>巫師加隆:</span><b id="p-gold">0 G</b></div>
+                <div class="status-row"><span>外貌魅力:</span><b id="p-char">50</b></div>
+                <div class="status-row"><span>談吐說服:</span><b id="p-speech">50</b></div>
+                <div class="status-row"><span>校園知名度:</span><b id="p-renown">0</b></div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-header">【隱藏陣營與聲望數值】</div>
+                <div class="status-row"><span>學院聲望:</span><b id="p-house-rep">0</b></div>
+                <div class="status-row"><span>教授評價總和:</span><b id="p-prof">0</b></div>
+                <div class="status-row"><span>黑魔法傾向深度:</span><b id="p-dark">0</b></div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-header">【命定魔杖與特殊體質】</div>
+                <div id="p-wand-talent" style="font-size: 0.8rem; line-height: 1.5; color: var(--text-muted);">尚未解析...</div>
+            </div>
+
+            <div class="panel-box" id="npc-box" style="display:none;">
+                <div class="panel-header">【當前聚焦 NPC 關係紀錄】</div>
+                <div id="p-npc-list" style="font-size: 0.8rem; line-height: 1.5;"></div>
+            </div>
+        </div>
+
+        <!-- 右側沉浸小說與對話舞台 -->
+        <div id="stage-container">
+            <div id="story-wall"></div>
+            
+            <div id="interactive-deck">
+                <div class="action-grid" id="choices-wrapper"></div>
+                <div class="input-bar">
+                    <input type="text" id="nlp-input" class="text-nlp" placeholder="或者，在這裡鍵入你的自由決策行為（例如：我抽魔杖施展【速速前！】）...">
+                    <button class="btn-nlp-submit" onclick="executeNLPAction()">執行</button>
+                </div>
+                <div class="meta-actions">
+                    <button class="btn-meta" onclick="saveSnapshot()">⚡ 持久化保存進度 (Save)</button>
+                    <button class="btn-meta" onclick="loadSnapshot()">📜 讀取歷史快照 (Load)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心狀態快照傳遞協定數據架構 (JSON State Snapshot Protocol)
+        let snapshot = {
+            player: {
+                name: "林恩·沃克", engName: "Lynn Walker", gender: "神祕",
+                bloodline: "未定", house: "未定", age: 11, year: "一年級（入學前）"
+            },
+            stats: {
+                mood: 100, maxMood: 100, health: 100, maxHealth: 100,
+                galleon: 0, charisma: 50, speech: 50,
+                houseRep: 0, profEval: 0, renown: 0, darkArts: 0
+            },
+            statusTags: ["正常"],
+            wand: { wood: "未定", core: "未定", quality: "普通", bonus: 0 },
+            talent: "等待載入",
+            nodeId: "prologue_start",
+            npcMatrix: {
+                "加里克·奧利凡德": { favor: 0, alert: 10, title: "魔杖店主 / 純血" },
+                "塞浦路斯教授": { favor: -10, alert: 40, title: "魔藥學教授 / 史萊哲林" },
+                "奧蕾莉亞·凡斯校長": { favor: 0, alert: 20, title: "霍格華茲校長 / 雷文克勞" }
+            },
+            tickCount: 1
+        };
+
+        // 啟動開頭動畫動畫過渡
+        function beginSimulation() {
+            document.getElementById('magic-intro').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('magic-intro').style.display = 'none';
+                document.getElementById('game-view').style.display = 'grid';
+                refreshHUD();
+                renderSceneEngine();
+            }, 1500);
+        }
+
+        // 渲染 HUD
+        function refreshHUD() {
+            document.getElementById('p-profile').innerHTML = `
+                <b>${snapshot.player.name}</b> (${snapshot.player.engName})<br>
+                年齡: ${snapshot.player.age} 歲 ｜ ${snapshot.player.year}<br>
+                起源血統: <span style="color:var(--accent-gold); font-weight:bold;">${snapshot.player.bloodline}</span><br>
+                當前學院: <span style="color:var(--accent-purple); font-weight:bold;">${snapshot.player.house}</span>
+            `;
+            document.getElementById('p-mood').innerText = `${snapshot.stats.mood}/${snapshot.stats.maxMood}`;
+            document.getElementById('p-health').innerText = `${snapshot.stats.health}/${snapshot.stats.maxHealth}`;
+            document.getElementById('p-tags').innerText = snapshot.statusTags.join(', ');
+            document.getElementById('p-gold').innerText = `${snapshot.stats.galleon} G`;
+            document.getElementById('p-char').innerText = snapshot.stats.charisma;
+            document.getElementById('p-speech').innerText = snapshot.stats.speech;
+            document.getElementById('p-renown').innerText = snapshot.stats.renown;
+            document.getElementById('p-house-rep').innerText = snapshot.stats.houseRep;
+            document.getElementById('p-prof').innerText = snapshot.stats.profEval;
+            document.getElementById('p-dark').innerText = snapshot.stats.darkArts;
+
+            document.getElementById('p-wand-talent').innerHTML = `
+                木材品質: <span style="color:#fff;">${snapshot.wand.wood || '未定'}</span><br>
+                芯材殘響: <span style="color:#fff;">${snapshot.wand.core || '未定'}</span> (${snapshot.wand.quality})<br>
+                特殊體質: <span style="color:var(--accent-gold); font-weight:bold;">${snapshot.talent}</span>
+            `;
+
+            // NPC 聚焦過濾渲染
+            let npcHTML = "";
+            let triggerShow = false;
+            for(let name in snapshot.npcMatrix) {
+                if(snapshot.npcMatrix[name].favor !== 0 || snapshot.npcMatrix[name].alert !== 20) {
+                    triggerShow = true;
+                    npcHTML += `<div style="margin-bottom:6px;"><b>${name}</b> (${snapshot.npcMatrix[name].title})<br>好感: ${snapshot.npcMatrix[name].favor} ｜ 戒備: ${snapshot.npcMatrix[name].alert}</div>`;
+                }
+            }
+            let box = document.getElementById('npc-box');
+            if(triggerShow) { box.style.display = "block"; document.getElementById('p-npc-list').innerHTML = npcHTML; }
+            else { box.style.display = "none"; }
+        }
+
+        // 存檔與讀取機制
+        function saveSnapshot() {
+            localStorage.setItem('hogwarts_snapshot_v3', JSON.stringify(snapshot));
+            alert('[系統提示] 數據快照成功寫入本地持久層（State Snapshot Protocol 覆寫完成）。');
+        }
+
+        function loadSnapshot() {
+            let item = localStorage.getItem('hogwarts_snapshot_v3');
+            if(item) {
+                snapshot = JSON.parse(item);
+                refreshHUD();
+                renderSceneEngine();
+                alert('[系統提示] 多輪對話防漂移架構生效：歷史狀態已完美持存還原。');
+            } else {
+                alert('[系統提示] 未能尋找到已持久化的存檔。');
+            }
+        }
+
+        // 對話框渲染助手
+        function makeDialogue(speakerClass, name, text) {
+            return `
+                <div class="dialogue-card">
+                    <div class="dialogue-speaker ${speakerClass}">● ${name}</div>
+                    <div class="dialogue-text">「${text}」</div>
+                </div>
+            `;
+        }
+
+        // 劇情數據庫引擎 (Dialogue & Narrative Database)
+        function renderSceneEngine() {
+            let wall = document.getElementById('story-wall');
+            let wrapper = document.getElementById('choices-wrapper');
+            wrapper.innerHTML = "";
+
+            let nodes = {
+                "prologue_start": {
+                    text: `
+                        <div class="toast-sys">*【巫師名冊】初始化成功。DM 運作機制正在實時監控變量動態。*</div>
+                        <p class="narrative">在漫天不散的倫敦濃霧中，破釜酒吧那扇斑駁的黑木門散發著酸澀的麥芽酒與陳舊魔藥的混雜氣味。這不是你所熟知的那個充滿童話色彩的魔法世界，而是一個精緻、冷酷、階級分明且暗流湧動的權力熔爐。</p>
+                        <p class="narrative">牆壁上的黃銅壁燈在霧氣中暈染出黏稠的光圈，酒吧角落裡坐著低頭竊竊私語的巫師，他們的長袍下擺沾著翻倒巷的黑泥，兜盟陰影深處閃爍著警惕與貪婪的目光。在這個世界線裡，魔法部的權力被古老的三大世家牢牢把持，而霍格華茲，正是這些繼承人們進行第一輪人生洗牌與權力博弈的殘酷舞台。</p>
+                        <p class="narrative">穿過破釜酒吧後院那堵冰冷的磚牆，斜角巷的繁華與冷冽同時撲面而來。此時，你就站在命運的起點。你的出生與家庭背景，將徹底抹平或放大開局的命運落差。</p>
+                    `,
+                    choices: [
+                        { text: "👑 選擇【純血家族起源】：初始資產 500 加隆。魅力常駐 +10，自帶古老家族政治政爭包袱。", next: "blood_pure" },
+                        { text: "💎 選擇【混血家庭起源】：初始資產 150 加隆。具備黃金社交彈性，NPC 初始戒備值極低。", next: "blood_mixed" },
+                        { text: "⚜️ 選擇【麻瓜出身起源】：初始資產 30 加隆。底層草根艱難開局，但解鎖獨特「麻瓜邏輯」思維線。", next: "blood_muggle" }
+                    ]
+                },
+                "ollivander_shop": {
+                    text: `
+                        <p class="narrative">推開奧利凡德魔杖店門，門楣上的黃銅風鈴發出清脆而略顯沙啞的聲響。店內狹窄陰暗，幾千個狹長盒子散發著厚重的灰塵與微弱的魔力波動。</p>
+                        <p class="narrative">一位面容清癯、眼球呈現淡淡銀白色的老人從貨架深處緩緩滑了出來——那是<b>加里克·奧利凡德</b>。他那雙彷彿能看穿靈魂的眼睛死死凝視著你，透過你的衣著質地、或是你面對魔法界時那無處安放的微小肢體動作，老人似乎一眼就看穿了你的靈魂數據結構。</p>
+                    ` + makeDialogue("speaker-ollivander", "加里克·奧利凡德", "哦……我明白了。不必開口，孩子。魔杖選擇巫師，這是我們這一行永恆不變的真理。有些人的血管裡流淌著雷電，有些人的靈魂裡藏著黑夜。來吧，讓我們看看哪一個老朋友在向你呼喚……"),
+                    choices: [
+                        { text: "【選項 A】伸出指尖，以極其溫和沉穩的方式感應木材殘響。", next: "wand_unicorn" },
+                        { text: "【選項 B】猛然握住黑長盒中的魔杖，將體內的魔力進行潮汐般的劇烈灌注！", action: "fumble_check", next: "wand_dragon" },
+                        { text: "【選項 C】閉上雙眼，摒棄肉眼干擾，純粹依憑精神靈魂的宏大共鳴。 ", next: "wand_phoenix" }
+                    ]
+                },
+                "sorting_ceremony": {
+                    text: `
+                        <p class="narrative">霍格華茲大禮堂。無數根懸浮在半空中的蠟燭將金色的光芒灑在四張巨大的長桌上。上百名學長姐正用審視、期盼或冷漠的目光注視著你們。禮堂最前方，<b>奧蕾莉亞·凡斯校長</b>神色嚴厲地站立在貓頭鷹講台後。</p>
+                        <p class="narrative">你緩步走上前，冰冷而滑稽的分院帽落入你的頭頂。一個沙啞的呢喃聲直接在你的大腦深處炸響：</p>
+                    ` + makeDialogue("speaker-hat", "分院帽", "哦……有意思。我看到了野心，也看到了面對未知的勇氣……血管中還隱藏著奇特的本質。孩子，你想去哪裡？"),
+                    choices: [
+                        { text: "【接受推薦】順應命定，分院帽判定推薦「雷文克勞」（學院聲望初始+15，心情+10）", next: "house_raven" },
+                        { text: "【產生強烈猶豫】在大腦中抗辯，強行違背風氣，指定進入追求世家權力的「史萊哲林」", next: "house_slytherin" }
+                    ]
+                },
+                "potions_class": {
+                    text: `
+                        <div class="toast-sys">[系統提示：自轉時鐘 Tick 推進 ── 第一學年第一週・魔藥學課堂]</div>
+                        <p class="narrative">冰冷潮濕的地窖教室內，空氣中混雜著羊皮紙與燃燒脂肪的苦澀氣味。<b>塞浦路斯教授</b>那雙多疑的黑色眼睛正宛如禿鷹般在課堂內掃視。他指尖輕敲黑胡桃木魔杖，語氣陰冷：</p>
+                    ` + makeDialogue("speaker-cyprus", "塞浦路斯 教授", "在我的課堂上，收起你們那愚蠢的麻瓜傲慢。今天我們要熬製基礎縮小劑，誰若是敢讓大釜發生爆炸，我會親手把他關進地下室洗一個月的毒斑鳩大釜。") +
+                    `<p class="narrative">塞浦路斯教授的目光突然死死釘在你的身上，他敲了敲講台，直接點名提問關於縮小劑的藥性配比！</p>`,
+                    choices: [
+                        { text: "【選項 A：穩健回答】根據課本知識精確背誦，並配合優雅談吐作答（依據談吐檢定成功率）。", next: "class_success" },
+                        { text: "【選項 B：激進操作】不單回答，同時主動動手加入乾縮無花果進行當堂魔力催化！", next: "class_critical" }
+                    ]
+                },
+                "end_node": {
+                    text: `<p class="narrative">本輪劇本演示暫告段落。你完美的數據面板已載入。在未來的自轉時鐘 Tick 中，世界與 NPC 將持續推演！</p>`,
+                    choices: []
+                }
+            };
+
+            let currentNode = nodes[snapshot.nodeId];
+            wall.innerHTML = currentNode.text;
+
+            currentNode.choices.forEach(c => {
+                let btn = document.createElement('button');
+                btn.className = "btn-choice";
+                btn.innerText = c.text;
+                btn.onclick = () => {
+                    if(c.action) { executeNodeAction(c.action); }
+                    snapshot.nodeId = c.next;
+                    updateStateLogics();
+                    refreshHUD();
+                    renderSceneEngine();
+                };
+                wrapper.appendChild(btn);
+            });
+        }
+
+        // 節點特定數學判定修正
+        function executeNodeAction(actionName) {
+            if(actionName === "fumble_check") {
+                let roll = Math.floor(Math.random() * 100) + 1;
+                if(roll > 85) {
+                    snapshot.stats.health -= 20;
+                    snapshot.statusTags = ["魔力透支"];
+                    alert("[大失敗 Fumble 判定] 魔力發生劇烈走火反噬！你的肉體健康受到衝擊，被動附加[魔力透支]標籤！");
+                }
+            }
+        }
+
+        // 狀態分支前置數據重寫
+        function updateStateLogics() {
+            switch(snapshot.nodeId) {
+                case "blood_pure":
+                    snapshot.player.bloodline = "純血家族";
+                    snapshot.stats.galleon = 500;
+                    snapshot.stats.charisma += 10;
+                    snapshot.stats.speech += 5;
+                    snapshot.stats.houseRep += 20;
+                    snapshot.nodeId = "ollivander_shop";
+                    break;
+                case "blood_mixed":
+                    snapshot.player.bloodline = "混血家庭";
+                    snapshot.stats.galleon = 150;
+                    snapshot.nodeId = "ollivander_shop";
+                    break;
+                case "blood_muggle":
+                    snapshot.player.bloodline = "麻瓜出身";
+                    snapshot.stats.galleon = 30;
+                    snapshot.stats.charisma -= 5;
+                    snapshot.stats.speech += 10;
+                    snapshot.stats.houseRep -= 25;
+                    snapshot.nodeId = "ollivander_shop";
+                    break;
+                case "wand_unicorn":
+                    snapshot.wand = { wood: "梣木", core: "獨角獸毛", quality: "良好", bonus: 5 };
+                    snapshot.talent = "鎖心術天才";
+                    snapshot.nodeId = "sorting_ceremony";
+                    break;
+                case "wand_dragon":
+                    snapshot.wand = { wood: "黑胡桃", core: "龍的心弦", quality: "優秀", bonus: 10 };
+                    snapshot.talent = "無杖魔法直覺";
+                    snapshot.nodeId = "sorting_ceremony";
+                    break;
+                case "wand_phoenix":
+                    snapshot.wand = { wood: "冬青木", core: "鳳凰羽毛", quality: "傳奇", bonus: 25 };
+                    snapshot.talent = "天生預言家";
+                    snapshot.nodeId = "sorting_ceremony";
+                    break;
+                case "house_raven":
+                    snapshot.player.house = "雷文克勞";
+                    snapshot.player.year = "一年級第一學期";
+                    snapshot.stats.houseRep += 15;
+                    snapshot.stats.mood = Math.min(100, snapshot.stats.mood + 10);
+                    snapshot.nodeId = "potions_class";
+                    break;
+                case "house_slytherin":
+                    snapshot.player.house = "史萊哲林";
+                    snapshot.player.year = "一年級第一學期";
+                    snapshot.stats.houseRep -= 10;
+                    snapshot.stats.darkArts += 5;
+                    snapshot.nodeId = "potions_class";
+                    break;
+                case "class_success":
+                    snapshot.stats.profEval += 10;
+                    snapshot.stats.renown += 5;
+                    snapshot.npcMatrix["塞浦路斯教授"].favor += 5;
+                    alert("[判定成功] 塞浦路斯教授冷哼了一聲，不情願地給你的完美回答加上了5分。");
+                    snapshot.nodeId = "end_node";
+                    break;
+                case "class_critical":
+                    let dice = Math.floor(Math.random() * 100) + 1;
+                    if(dice <= 40) {
+                        snapshot.stats.profEval += 25;
+                        snapshot.stats.renown += 20;
+                        snapshot.npcMatrix["塞浦路斯教授"].favor += 15;
+                        alert("[極端大成功 Critical] 大釜內綻放出完美的寶藍色光暈！全班震驚，塞浦路斯教授眼中罕見地閃過一絲讚賞！");
+                    } else {
+                        snapshot.stats.health -= 15;
+                        snapshot.stats.profEval -= 15;
+                        snapshot.statusTags.push("受傷");
+                        alert("[大失敗] 藥劑過載引發連環爆炸！你受傷了，並遭到了毒辣的扣分處罰！");
+                    }
+                    snapshot.nodeId = "end_node";
+                    break;
+            }
+        }
+
+        // NLP 自由文字解析引擎
+        function executeNLPAction() {
+            let inputStr = document.getElementById('nlp-input').value.trim();
+            if(!inputStr) return;
+
+            let wall = document.getElementById('story-wall');
+            let feedback = "";
+
+            // 嚴格黑魔法禁令檢定
+            if(inputStr.includes("阿哇呾喀呾啦") || inputStr.includes("索命咒") || inputStr.includes("不赦咒")) {
+                snapshot.stats.health = 0;
+                snapshot.stats.mood = 0;
+                snapshot.nodeId = "end_node";
+                feedback = `
+                    <div class="dialogue-card" style="border-left-color: var(--accent-red);">
+                        <div class="dialogue-speaker speaker-system">☠️ 核心安全防禦機制觸發</div>
+                        <div class="dialogue-text">你試圖施展極端禁忌黑魔法 <span class="unforgivable-spell">【阿哇呾喀呾啦！】</span>。後台突擊檢查線瞬間湮滅，傲羅以現形術將你當街按倒，網頁存檔強制凍結，你已被判處阿茲卡班無期徒刑。</div>
+                    </div>
+                `;
+            } else if(inputStr.includes("去去，武器走") || inputStr.includes("速速前")) {
+                snapshot.stats.renown += 10;
+                snapshot.stats.darkArts += 2;
+                feedback = `<p style="color: var(--accent-blue); font-weight:bold;">[NLP 語意提取成功]：你高舉魔杖施展了標準符咒動作。周圍空氣產生魔力漣漪，校園知名度被動提升！</p>`;
+            } else {
+                snapshot.stats.mood = Math.max(0, snapshot.stats.mood - 10);
+                feedback = `<p style="color: var(--text-muted);">[NLP 自主策略判定]：你執行了：“${inputStr}”。DM 內核正在評估合理性，心理消耗導致心情微幅下降。</p>`;
+            }
+
+            wall.innerHTML += feedback;
+            document.getElementById('nlp-input').value = "";
+            refreshHUD();
+        }
+    </script>
+</body>
+</html>
             --text-muted: #94a3b8;
             --border-glow: rgba(212, 175, 55, 0.2);
         }
